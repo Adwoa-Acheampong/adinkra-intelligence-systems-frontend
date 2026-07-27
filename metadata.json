@@ -1,0 +1,6 @@
+{
+  "name": "Adinkra Intelligence Systems",
+  "description": "Palantir-grade multi-tenant, multi-vertical backend for Blkk Star Hub",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

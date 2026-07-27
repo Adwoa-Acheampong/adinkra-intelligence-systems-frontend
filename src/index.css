@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Base Adinkra Theme */
+  --color-adinkra-black: #050505;
+  --color-adinkra-dark: #0A0A0A;
+  --color-adinkra-gold: #D9A84E;
+  
+  /* Vertical Theme Overrides */
+  --color-vertical-accent: var(--theme-accent, #D9A84E);
+  --color-vertical-accent-glow: var(--theme-accent-glow, rgba(217, 168, 78, 0.15));
+  
+  /* Glass */
+  --color-surface-glass: rgba(255, 255, 255, 0.03);
+  --color-surface-border: rgba(255, 255, 255, 0.08);
+  --color-surface-glass-hover: rgba(255, 255, 255, 0.06);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+body {
+  background-color: var(--color-adinkra-black);
+  color: #F8F8F8;
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+code, pre {
+  font-family: var(--font-mono);
+}
+
+/* Base scrollbar styling */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-surface-border);
+  border-radius: 4px;
+}
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--color-vertical-accent);
+}
