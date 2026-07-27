@@ -1,19 +1,40 @@
 import React from 'react';
-import { Users, Search, Bell } from 'lucide-react';
+import { Users, Search, Bell, ChevronRight } from 'lucide-react';
 import { useTenant } from '../../context/TenantContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLocation } from 'react-router-dom';
 
 export const Topbar = () => {
   const { tenantId, merchantId } = useTenant();
   const { theme } = useTheme();
+  const location = useLocation();
+
+  const getBreadcrumbs = () => {
+    const paths = location.pathname.split('/').filter(Boolean);
+    if (paths.length === 0) return ['Ecosystem Command Center'];
+    
+    // Capitalize and format paths
+    const formatted = paths.map(p => 
+      p.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    );
+    
+    return [theme.name, ...formatted];
+  };
+
+  const breadcrumbs = getBreadcrumbs();
 
   return (
     <header className="h-16 bg-adinkra-black border-b border-surface-border flex items-center justify-between px-6 shrink-0 relative z-20">
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-gray-500">
-          <span className="text-vertical-accent transition-colors duration-500">{theme.name}</span>
-          <span>/</span>
-          <span className="text-gray-300">Overview</span>
+          {breadcrumbs.map((crumb, idx) => (
+            <React.Fragment key={idx}>
+              {idx > 0 && <ChevronRight size={12} className="text-gray-600" />}
+              <span className={idx === breadcrumbs.length - 1 ? "text-gray-300" : "text-vertical-accent transition-colors duration-500"}>
+                {crumb}
+              </span>
+            </React.Fragment>
+          ))}
         </div>
       </div>
       

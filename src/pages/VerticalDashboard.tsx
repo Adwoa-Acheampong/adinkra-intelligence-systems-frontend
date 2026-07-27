@@ -7,54 +7,24 @@ import { useTenant } from '../context/TenantContext';
 import { VerticalId, Tenant } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { getTenantsByVertical, getMockVerticalKPIs, getMockVerticalCharts } from '../data/mockAnalyticsData';
+import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
+import { FilterBar } from '../components/analytics/FilterBar';
 
-const MOCK_TENANTS: Record<VerticalId, Tenant[]> = {
-  autos: [
-    { id: 'agl', name: 'Automobiles Ghana Limited (AGL)', verticalId: 'autos', type: 'dealer' },
-    { id: 'kumasi_motors', name: 'Kumasi Motors', verticalId: 'autos', type: 'dealer' },
-    { id: 'adinkra_motors', name: 'Adinkra Motors Workshop', verticalId: 'autos', type: 'merchant' },
-  ],
-  farmers: [
-    { id: 'techiman_grain', name: 'Techiman Grain Co-op', verticalId: 'farmers', type: 'coop' },
-    { id: 'akumadan_farms', name: 'Akumadan Farms', verticalId: 'farmers', type: 'coop' },
-  ],
-  estate: [
-    { id: 'prime_accra', name: 'Prime Accra Realty', verticalId: 'estate', type: 'agent' },
-    { id: 'heritage', name: 'Heritage Estates', verticalId: 'estate', type: 'agent' },
-  ],
-  merchant: [
-    { id: 'techvalley', name: 'TechValley GH', verticalId: 'merchant', type: 'merchant' },
-    { id: 'osu_bespoke', name: 'Osu Bespoke', verticalId: 'merchant', type: 'merchant' },
-  ],
-  label: [
-    { id: 'crushed_diamonds', name: 'Crushed Diamonds', verticalId: 'label', type: 'house' },
-    { id: 'havilah', name: 'Havilah', verticalId: 'label', type: 'house' },
-  ],
-  global: [],
-  gold: [],
-  agents: [],
-};
-
-const perfData = [
-  { name: 'Mon', revenue: 12000, orders: 45 },
-  { name: 'Tue', revenue: 19000, orders: 62 },
-  { name: 'Wed', revenue: 15000, orders: 54 },
-  { name: 'Thu', revenue: 22000, orders: 71 },
-  { name: 'Fri', revenue: 28000, orders: 89 },
-  { name: 'Sat', revenue: 35000, orders: 110 },
-  { name: 'Sun', revenue: 31000, orders: 95 },
-];
-
+// ...
 export const VerticalDashboard: React.FC<{ verticalId: VerticalId }> = ({ verticalId }) => {
   const { theme } = useTheme();
   const { setCurrentVertical } = useTenant();
   const navigate = useNavigate();
+  const { filters, updateFilter } = useAnalyticsFilters();
 
   useEffect(() => {
     setCurrentVertical(verticalId);
   }, [verticalId, setCurrentVertical]);
 
-  const tenants = MOCK_TENANTS[verticalId] || [];
+  const tenants = getTenantsByVertical(verticalId);
+  const kpis = getMockVerticalKPIs(verticalId);
+  const perfData = getMockVerticalCharts(verticalId);
 
   return (
     <motion.div 
@@ -63,7 +33,7 @@ export const VerticalDashboard: React.FC<{ verticalId: VerticalId }> = ({ vertic
       key={verticalId} // Re-animate on vertical change
       className="space-y-8 max-w-7xl mx-auto min-h-[calc(100vh-8rem)] flex flex-col"
     >
-      <div className="flex flex-col md:flex-row md:items-start justify-between mb-2 gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-start justify-between mb-2 gap-4">
         <div>
           <h2 className="text-3xl font-display font-semibold tracking-tight text-white">
             {theme.name} <span style={{ color: 'var(--theme-accent)' }}>Hub</span>
@@ -73,26 +43,16 @@ export const VerticalDashboard: React.FC<{ verticalId: VerticalId }> = ({ vertic
           </p>
         </div>
         
-        <div className="flex gap-2">
-          <button className="px-3 py-1.5 bg-surface-glass border border-surface-border hover:border-vertical-accent/30 rounded flex items-center gap-2 text-xs font-mono text-gray-300 hover:text-white transition-colors cursor-pointer">
-            <Filter size={14} />
-            <span>FILTER</span>
-          </button>
-        </div>
+        <FilterBar filters={filters} updateFilter={updateFilter} />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'ACTIVE TENANTS', value: tenants.length.toString(), icon: Building },
-          { label: 'GMV (7D)', value: 'GHS 162K', icon: TrendingUp },
-          { label: 'ACTIVE LISTINGS', value: '4,521', icon: Database },
-          { label: 'CUSTOMER REACH', value: '18.2K', icon: Users },
-        ].map((kpi, i) => (
+        {kpis.map((kpi, i) => (
           <GlassPanel key={i} className="p-5 rounded-xl h-[120px] flex flex-col justify-between relative overflow-hidden border-l-2 border-l-transparent hover:border-l-vertical-accent transition-colors">
              <div className="absolute top-0 right-0 w-24 h-24 bg-vertical-accent opacity-[0.03] rounded-bl-full blur-xl"></div>
              <div className="flex justify-between items-start z-10">
                <div className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">{kpi.label}</div>
-               <kpi.icon size={14} className="text-vertical-accent opacity-60" />
+               <Database size={14} className="text-vertical-accent opacity-60" />
              </div>
              <div className="text-2xl font-display text-white relative z-10 font-medium">{kpi.value}</div>
           </GlassPanel>

@@ -1,39 +1,21 @@
 import React, { useEffect } from 'react';
-import { useParams, Link, Routes, Route, useNavigate } from 'react-router-dom';
+import { useParams, Link, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { useTenant } from '../../context/TenantContext';
 import { VerticalId, Tenant } from '../../types';
-import { Shield, ArrowLeft, LayoutDashboard, Wrench, Package, ShoppingCart, DollarSign, Users, Bot } from 'lucide-react';
+import { Shield, ArrowLeft, LayoutDashboard, Wrench, Package, ShoppingCart, DollarSign, Users, Bot, MessageSquare, Briefcase, Truck, Activity, FileText, Settings, Heart, Cpu } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { GlassPanel } from '../ui/GlassPanel';
 import { TenantOverview } from '../../pages/tenant/TenantOverview';
+import { getTenantById } from '../../data/mockAnalyticsData';
 
-// In a real app, this would be fetched from an API
-const MOCK_TENANTS: Tenant[] = [
-  { id: 'agl', name: 'Automobiles Ghana Limited (AGL)', verticalId: 'autos', type: 'dealer' },
-  { id: 'kumasi_motors', name: 'Kumasi Motors', verticalId: 'autos', type: 'dealer' },
-  { id: 'adinkra_motors', name: 'Adinkra Motors Workshop', verticalId: 'autos', type: 'merchant' },
-  { id: 'techiman_grain', name: 'Techiman Grain Co-op', verticalId: 'farmers', type: 'coop' },
-  { id: 'akumadan_farms', name: 'Akumadan Farms', verticalId: 'farmers', type: 'coop' },
-  { id: 'prime_accra', name: 'Prime Accra Realty', verticalId: 'estate', type: 'agent' },
-  { id: 'heritage', name: 'Heritage Estates', verticalId: 'estate', type: 'agent' },
-  { id: 'techvalley', name: 'TechValley GH', verticalId: 'merchant', type: 'merchant' },
-  { id: 'osu_bespoke', name: 'Osu Bespoke', verticalId: 'merchant', type: 'merchant' },
-  { id: 'crushed_diamonds', name: 'Crushed Diamonds', verticalId: 'label', type: 'house' },
-  { id: 'havilah', name: 'Havilah', verticalId: 'label', type: 'house' },
-];
+import { getTenantModules } from '../../config/routes';
+
+import { GenericEntityTable } from './GenericEntityTable';
 
 const TenantSidebar = ({ tenant }: { tenant: Tenant }) => {
   const { theme } = useTheme();
   
-  const navItems = [
-    { name: 'Dashboard', path: '', icon: <LayoutDashboard size={18} /> },
-    { name: 'FixBot', path: 'fixbot', icon: <Bot size={18} /> },
-    { name: 'Workshop', path: 'workshop', icon: <Wrench size={18} /> },
-    { name: 'Inventory', path: 'inventory', icon: <Package size={18} /> },
-    { name: 'Sales', path: 'sales', icon: <ShoppingCart size={18} /> },
-    { name: 'Finance', path: 'finance', icon: <DollarSign size={18} /> },
-    { name: 'HR & People', path: 'hr', icon: <Users size={18} /> },
-  ];
+  const navItems = getTenantModules(tenant.verticalId, tenant.type);
 
   return (
     <aside className="w-64 bg-[#0a0a0a] border-r border-surface-border flex flex-col h-full shrink-0">
@@ -83,7 +65,7 @@ export const TenantERPShell = () => {
   useEffect(() => {
     if (verticalId) setCurrentVertical(verticalId);
     
-    const tenant = MOCK_TENANTS.find(t => t.id === tenantId);
+    const tenant = getTenantById(tenantId || '');
     if (tenant) {
       setCurrentTenant(tenant);
     } else {
@@ -121,13 +103,7 @@ export const TenantERPShell = () => {
         <main className="flex-1 overflow-auto p-6 md:p-8 relative z-10 custom-scrollbar">
           <Routes>
             <Route path="/" element={<TenantOverview />} />
-            <Route path="*" element={
-              <div className="h-full flex items-center justify-center flex-col text-center">
-                <Wrench size={48} className="text-surface-border mb-4" />
-                <h3 className="text-xl font-display text-gray-300">Module under construction</h3>
-                <p className="text-gray-500 text-sm mt-2 max-w-sm">This module is part of the AGL Ops specification but is currently not hooked up to the mock data interface.</p>
-              </div>
-            } />
+            <Route path="*" element={<GenericEntityTable />} />
           </Routes>
         </main>
       </div>

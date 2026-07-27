@@ -71,13 +71,16 @@ const LeaderboardRow = ({ rank, name, metric1, metric2, icon: Icon }: any) => (
   </div>
 );
 
+import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
+import { FilterBar } from '../components/analytics/FilterBar';
+import { useNavigate } from 'react-router-dom';
+
 export const CommandCenter = () => {
   const { setCurrentVertical } = useTenant();
+  const navigate = useNavigate();
   
-  // Filter States
-  const [timeframe, setTimeframe] = useState('7D');
-  const [currency, setCurrency] = useState('GHS');
-  const [region, setRegion] = useState('Global');
+  const { filters, updateFilter } = useAnalyticsFilters();
+  const currency = filters.currency;
 
   useEffect(() => {
     setCurrentVertical('global');
@@ -98,46 +101,7 @@ export const CommandCenter = () => {
           </p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center bg-[#0a0a0a] border border-surface-border rounded-lg p-1">
-            {['Real-time', 'Today', '7D', '30D', 'YTD'].map(t => (
-              <button 
-                key={t}
-                onClick={() => setTimeframe(t)}
-                className={`px-3 py-1.5 text-xs font-mono rounded-md transition-colors ${timeframe === t ? 'bg-surface-border text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          
-          <div className="flex items-center bg-[#0a0a0a] border border-surface-border rounded-lg p-1">
-            {['GHS', 'USD'].map(c => (
-              <button 
-                key={c}
-                onClick={() => setCurrency(c)}
-                className={`px-3 py-1.5 text-xs font-mono rounded-md transition-colors ${currency === c ? 'bg-surface-border text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative">
-            <select 
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              className="appearance-none bg-[#0a0a0a] border border-surface-border text-white text-xs font-mono rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:border-vertical-accent"
-            >
-              <option value="Global">Global</option>
-              <option value="Accra">Greater Accra</option>
-              <option value="Kumasi">Ashanti (Kumasi)</option>
-              <option value="Techiman">Bono East (Techiman)</option>
-              <option value="Northern">Northern Region</option>
-            </select>
-            <Globe size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-          </div>
-        </div>
+        <FilterBar filters={filters} updateFilter={updateFilter} />
       </div>
 
       {/* Ticker Bar */}
@@ -166,7 +130,34 @@ export const CommandCenter = () => {
         <MetricCard title="Net Cash Flow" value={currency === 'GHS' ? 'GHS 420K' : '$28.2K'} change="8.4%" icon={DollarSign} trend="up" />
       </div>
 
-      {/* Main Analytics Grid */}
+      {/* Vertical Contribution */}
+      <div>
+        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-4 border-b border-surface-border pb-2">Vertical Contribution</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {[
+            { id: 'merchant', name: 'Merchants', gmv: '¢850K' },
+            { id: 'autos', name: 'AutoHub', gmv: '¢4.2M' },
+            { id: 'estate', name: 'Estate', gmv: '¢12.5M' },
+            { id: 'farmers', name: 'Farmers', gmv: '¢320K' },
+            { id: 'label', name: 'Label', gmv: '¢1.2M' },
+            { id: 'susu', name: 'Susu', gmv: '¢2.4M' },
+            { id: 'gold', name: 'Gold', gmv: '¢8.4M' }
+          ].map(v => (
+            <GlassPanel 
+              key={v.id} 
+              interactive 
+              onClick={() => {
+                setCurrentVertical(v.id as any);
+                navigate(`/${v.id === 'merchant' ? 'merchant' : v.id}`);
+              }}
+              className="p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:border-vertical-accent transition-colors group"
+            >
+              <div className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-2 group-hover:text-white transition-colors">{v.name}</div>
+              <div className="text-lg font-display text-white">{v.gmv}</div>
+            </GlassPanel>
+          ))}
+        </div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart Column */}
         <div className="lg:col-span-2 flex flex-col gap-6">

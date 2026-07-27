@@ -23,13 +23,21 @@ export const Sidebar = () => {
     { id: 'autos', name: 'AutoHub', path: '/autos', icon: <Car size={18} /> },
     { id: 'estate', name: 'Estate', path: '/estate', icon: <Shield size={18} /> },
     { id: 'farmers', name: 'Farmers Market', path: '/farmers', icon: <Leaf size={18} /> },
-    { id: 'label', name: 'Blkk Label', path: '/label', icon: <Zap size={18} /> },
+    { id: 'label', name: 'BLKK Label', path: '/label', icon: <Zap size={18} /> },
+    { id: 'appsWebsite', name: 'Websites & Apps', path: '/apps-website', icon: <Activity size={18} /> },
+    { id: 'susu', name: 'Susu Rail & Payments', path: '/susu', icon: <Coins size={18} /> },
     { id: 'gold', name: 'Precious Metals', path: '/gold', icon: <Coins size={18} /> },
+    { id: 'agents', name: 'Field Agents', path: '/agents', icon: <Shield size={18} /> },
   ];
+
+  const handleSettingsClick = () => {
+    setCurrentVertical('systemConfig');
+    navigate('/system-config');
+  };
 
   return (
     <aside className="w-64 bg-adinkra-dark border-r border-surface-border flex flex-col h-full shrink-0 relative z-20">
-      <div className="p-6 flex items-center gap-3">
+      <div className="p-6 flex items-center gap-3 cursor-pointer" onClick={() => handleNav('/', 'global')}>
         <Shield size={28} className="text-vertical-accent transition-colors duration-500" />
         <div>
           <h1 className="font-display font-bold text-lg tracking-wider text-white leading-tight">ADINKRA</h1>
@@ -62,7 +70,14 @@ export const Sidebar = () => {
       </nav>
 
       <div className="p-4 border-t border-surface-border">
-        <button className="w-full flex items-center gap-3 px-3 py-2.5 text-gray-400 hover:text-white transition-colors rounded-md hover:bg-surface-glass">
+        <button 
+          onClick={handleSettingsClick}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors ${
+            currentVertical === 'systemConfig' 
+              ? 'bg-vertical-accent-glow text-vertical-accent shadow-[inset_2px_0_0_0_var(--theme-accent)]' 
+              : 'text-gray-400 hover:text-white hover:bg-surface-glass'
+          }`}
+        >
           <Settings size={18} />
           <span className="text-sm font-medium">System Config</span>
         </button>
