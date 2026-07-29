@@ -2,11 +2,9 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { GlassPanel } from '../components/ui/GlassPanel';
 import { Settings, Shield, Users, Server, Database, Activity, Lock, AlertTriangle } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext';
 import { useTenant } from '../context/TenantContext';
 
 export const SystemConfig: React.FC = () => {
-  const { theme } = useTheme();
   const { setCurrentVertical } = useTenant();
 
   React.useEffect(() => {

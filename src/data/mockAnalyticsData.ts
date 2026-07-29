@@ -1,4 +1,4 @@
-import { Tenant, VerticalId, SourceSurface } from '../types';
+import { Tenant, VerticalId } from '../types';
 
 export const MOCK_TENANTS: Tenant[] = [
   { id: 'agl', name: 'Automobiles Ghana Limited (AGL)', verticalId: 'autos', type: 'dealer' },
@@ -10,9 +10,17 @@ export const MOCK_TENANTS: Tenant[] = [
   { id: 'heritage', name: 'Heritage Estates', verticalId: 'estate', type: 'agency' },
   { id: 'techvalley', name: 'TechValley GH', verticalId: 'merchant', type: 'merchant' },
   { id: 'osu_bespoke', name: 'Osu Bespoke', verticalId: 'merchant', type: 'merchant' },
+  { id: 'abossey_parts', name: 'Abossey Okai Parts Network', verticalId: 'merchant', type: 'parts_seller' },
+  { id: 'makola_home', name: 'Makola Home & Trade', verticalId: 'merchant', type: 'merchant' },
+  { id: 'kaneshie_electronics', name: 'Kaneshie Electronics Market', verticalId: 'merchant', type: 'merchant' },
+  { id: 'kumasi_trade_depot', name: 'Kumasi Trade Depot', verticalId: 'merchant', type: 'merchant' },
   { id: 'crushed_diamonds', name: 'Crushed Diamonds', verticalId: 'label', type: 'house' },
   { id: 'havilah', name: 'Havilah', verticalId: 'label', type: 'house' },
   { id: 'mining_gh', name: 'Ghana Mining Corp', verticalId: 'gold', type: 'miner' },
+  { id: 'accra_field_network', name: 'Greater Accra Field Network', verticalId: 'agents', type: 'agent' },
+  { id: 'ashanti_trade_desk', name: 'Ashanti Trade Agent Desk', verticalId: 'agents', type: 'agent' },
+  { id: 'techiman_market_unit', name: 'Techiman Market Verification Unit', verticalId: 'agents', type: 'agent' },
+  { id: 'tema_fulfilment_cell', name: 'Tema Fulfilment Agent Cell', verticalId: 'agents', type: 'agent' },
 ];
 
 export const getTenantsByVertical = (verticalId: VerticalId): Tenant[] => {

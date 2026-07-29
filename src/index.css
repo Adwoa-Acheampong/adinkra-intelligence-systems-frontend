@@ -39,6 +39,13 @@ code, pre {
   font-family: var(--font-mono);
 }
 
+.evidence-ledger {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 100% 32px, 32px 100%;
+}
+
 /* Base scrollbar styling */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
@@ -52,4 +59,15 @@ code, pre {
 }
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
   background: var(--color-vertical-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

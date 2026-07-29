@@ -1,389 +1,145 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { GlassPanel } from '../components/ui/GlassPanel';
-import { useTenant } from '../context/TenantContext';
-import { 
-  ShieldAlert, Activity, Network, BrainCircuit, DollarSign, Users, Target, BarChart2, 
-  ArrowRight, ArrowUpRight, ArrowDownRight, Globe, Filter, Truck, Package, Wrench, Sprout, Star 
-} from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
-// --- MOCK DATA ---
-const revenueData = [
-  { name: 'Jan', revenue: 420000, expenses: 280000 },
-  { name: 'Feb', revenue: 480000, expenses: 310000 },
-  { name: 'Mar', revenue: 510000, expenses: 320000 },
-  { name: 'Apr', revenue: 640000, expenses: 380000 },
-  { name: 'May', revenue: 720000, expenses: 410000 },
-  { name: 'Jun', revenue: 850000, expenses: 460000 },
-  { name: 'Jul', revenue: 910000, expenses: 490000 },
-];
-
-const verticalData = [
-  { name: 'Merchants', volume: 14500, agents: 420 },
-  { name: 'AutoHub', volume: 22000, agents: 180 },
-  { name: 'Estate', volume: 45000, agents: 112 },
-  { name: 'Farmers', volume: 18000, agents: 890 },
-  { name: 'Label', volume: 8500, agents: 45 },
-];
-
-const tickers = [
-  { label: 'FERTILIZER (NPK 15:15:15)', price: 'GHS 420/bag', change: '-2.4%', trend: 'down' },
-  { label: 'TECHIMAN MAIZE', price: 'GHS 180/bag', change: '+1.2%', trend: 'up' },
-  { label: 'GOLD SPOT', price: '$2,340/oz', change: '+0.5%', trend: 'up' },
-  { label: 'AUTO PARTS INDEX', price: '142.5 pts', change: '-0.8%', trend: 'down' },
-  { label: 'BRENT CRUDE', price: '$82.40/bbl', change: '+1.1%', trend: 'up' },
-  { label: 'USD/GHS', price: '14.85', change: '+0.2%', trend: 'up' },
-];
-
-// --- SUB-COMPONENTS ---
-const MetricCard = ({ title, value, change, trend = 'up', icon: Icon, highlight }: any) => (
-  <GlassPanel className={`p-5 rounded-xl flex flex-col justify-between h-[130px] border-l-2 ${highlight ? 'border-l-vertical-accent' : 'border-l-transparent'}`}>
-    <div className="flex items-center justify-between mb-2">
-      <div className="text-[10px] font-mono tracking-widest text-gray-400 uppercase">{title}</div>
-      <Icon size={14} className="text-vertical-accent opacity-70" />
-    </div>
-    <div className="flex items-end justify-between">
-      <div className="text-2xl font-display font-medium tracking-tight text-white">{value}</div>
-      <div className={`text-[10px] font-mono flex items-center gap-1 ${trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-        {trend === 'up' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />} {change}
-      </div>
-    </div>
-  </GlassPanel>
-);
-
-const LeaderboardRow = ({ rank, name, metric1, metric2, icon: Icon }: any) => (
-  <div className="flex items-center justify-between p-2.5 hover:bg-surface-glass rounded-lg transition-colors border border-transparent hover:border-surface-border">
-    <div className="flex items-center gap-3">
-      <div className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold ${rank === 1 ? 'bg-yellow-500/20 text-yellow-500' : rank === 2 ? 'bg-gray-300/20 text-gray-300' : rank === 3 ? 'bg-orange-600/20 text-orange-500' : 'bg-surface-border text-gray-500'}`}>
-        {rank}
-      </div>
-      <div>
-        <div className="text-sm font-medium text-white flex items-center gap-2">
-          {name}
-        </div>
-      </div>
-    </div>
-    <div className="flex flex-col items-end">
-      <div className="text-xs text-white font-mono">{metric1}</div>
-      <div className="text-[10px] text-gray-500 font-mono">{metric2}</div>
-    </div>
-  </div>
-);
-
-import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
+import { ArrowRight, Command, Fingerprint, Network, ShieldAlert } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { DecisionInsightDashboard } from '../components/analytics/DecisionInsightDashboard';
 import { FilterBar } from '../components/analytics/FilterBar';
-import { useNavigate } from 'react-router-dom';
+import { GlassPanel } from '../components/ui/GlassPanel';
+import { ERP_SWITCHER, GLOBAL_ERP } from '../config/erpWorkspaces';
+import { useTenant } from '../context/TenantContext';
+import { getERPInsightDefinition } from '../data/erpInsightCatalog';
+import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
 
-export const CommandCenter = () => {
+const operatingSignals = [
+  { vertical: 'Estate', constraint: 'Title & mandate controls', decision: 'Escalate 7 high-value mandates', value: 'GHS 620K', confidence: 78, path: '/estate/verification' },
+  { vertical: 'AutoHub', constraint: 'Inspection and parts supply', decision: 'Extend inspectors; transfer stock', value: 'GHS 465K', confidence: 86, path: '/autos/inspections' },
+  { vertical: 'Farmers', constraint: 'Cold-chain and grade review', decision: 'Reroute 18.4 t; add grader', value: 'GHS 330K', confidence: 82, path: '/farmers/quality' },
+  { vertical: 'Merchants', constraint: 'Fast-moving stockouts', decision: 'Approve verified substitutes', value: 'GHS 205K', confidence: 88, path: '/merchant/inventory' },
+  { vertical: 'Susu Rail', constraint: 'Settlement callback breaks', decision: 'Reconcile MTN batch 726B', value: 'GHS 120K', confidence: 94, path: '/susu/settlement' },
+];
+
+export const CommandCenter: React.FC = () => {
   const { setCurrentVertical } = useTenant();
   const navigate = useNavigate();
-  
+  const [searchParams, setSearchParams] = useSearchParams();
   const { filters, updateFilter } = useAnalyticsFilters();
-  const currency = filters.currency;
+  const insight = getERPInsightDefinition(GLOBAL_ERP, '', 'Ecosystem');
+  const selected = searchParams.get('drill') || '';
 
   useEffect(() => {
     setCurrentVertical('global');
   }, [setCurrentVertical]);
 
+  const setSelected = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('drill', value);
+    else next.delete('drill');
+    setSearchParams(next, { replace: true });
+  };
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6 max-w-[1600px] mx-auto pb-12"
+      className="mx-auto max-w-[1600px] space-y-6 pb-12"
     >
-      {/* Header & Global Filters */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-surface-border pb-4">
+      <div className="flex flex-col justify-between gap-4 border-b border-white/10 pb-5 xl:flex-row xl:items-end">
         <div>
-          <h2 className="text-3xl font-display font-semibold text-white tracking-tight">Global Command</h2>
-          <p className="text-gray-400 mt-2 text-sm max-w-2xl">
-            Palantir-grade macro-analytics across Finance, Operations, Marketing, and Human Capital.
-          </p>
+          <div className="mb-2 flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.22em] text-vertical-accent">
+            <Command size={12} /> Ecosystem ERP / Central command
+          </div>
+          <h1 className="text-3xl font-display font-semibold tracking-tight text-white">Adinkra decision command</h1>
+          <div className="mt-3 flex flex-wrap gap-2 text-[9px] font-mono uppercase tracking-wider text-gray-500">
+            <span className="rounded border border-white/[0.08] px-2 py-1">9 ERPs</span>
+            <span className="rounded border border-white/[0.08] px-2 py-1">31 tenants</span>
+            <span className="rounded border border-white/[0.08] px-2 py-1">18,420 events</span>
+            <span className="rounded border border-red-400/20 bg-red-400/[0.05] px-2 py-1 text-red-300">17 blockers</span>
+          </div>
         </div>
-        
-        <FilterBar filters={filters} updateFilter={updateFilter} />
-      </div>
-
-      {/* Ticker Bar */}
-      <div className="w-full bg-[#050505] border border-surface-border rounded-lg overflow-hidden flex items-center py-2 relative">
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#050505] to-transparent z-10"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#050505] to-transparent z-10"></div>
-        <div className="animate-marquee whitespace-nowrap flex gap-8 px-4">
-          {[...tickers, ...tickers, ...tickers].map((item, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs font-mono">
-              <span className="text-gray-400">{item.label}:</span>
-              <span className="text-white">{item.price}</span>
-              <span className={`flex items-center gap-0.5 ${item.trend === 'up' ? 'text-green-400' : 'text-red-400'}`}>
-                {item.trend === 'up' ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
-                {item.change}
-              </span>
-            </div>
-          ))}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <button
+            onClick={() => navigate('/intelligence?metric=inventory.trusted_value')}
+            className="flex min-h-10 items-center justify-center gap-2 rounded-lg border border-vertical-accent/25 bg-vertical-accent/[0.07] px-3 font-mono text-[9px] uppercase tracking-wider text-vertical-accent transition hover:bg-vertical-accent/[0.12] focus:outline-none focus:ring-2 focus:ring-vertical-accent"
+          >
+            <Fingerprint size={13} /> Open claim evidence
+          </button>
+          <FilterBar filters={filters} updateFilter={updateFilter} />
         </div>
       </div>
 
-      {/* Financial Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Gross Merchandise Value" value={currency === 'GHS' ? 'GHS 4.2M' : '$282.8K'} change="18.4%" icon={DollarSign} highlight />
-        <MetricCard title="Operating Revenue" value={currency === 'GHS' ? 'GHS 910K' : '$61.2K'} change="12.1%" icon={Activity} />
-        <MetricCard title="Blended Margin" value="21.6%" change="1.2%" icon={BarChart2} />
-        <MetricCard title="Net Cash Flow" value={currency === 'GHS' ? 'GHS 420K' : '$28.2K'} change="8.4%" icon={DollarSign} trend="up" />
-      </div>
+      <DecisionInsightDashboard insight={insight} selected={selected} onSelect={setSelected} />
 
-      {/* Vertical Contribution */}
-      <div>
-        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-4 border-b border-surface-border pb-2">Vertical Contribution</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-          {[
-            { id: 'merchant', name: 'Merchants', gmv: '¢850K' },
-            { id: 'autos', name: 'AutoHub', gmv: '¢4.2M' },
-            { id: 'estate', name: 'Estate', gmv: '¢12.5M' },
-            { id: 'farmers', name: 'Farmers', gmv: '¢320K' },
-            { id: 'label', name: 'Label', gmv: '¢1.2M' },
-            { id: 'susu', name: 'Susu', gmv: '¢2.4M' },
-            { id: 'gold', name: 'Gold', gmv: '¢8.4M' }
-          ].map(v => (
-            <GlassPanel 
-              key={v.id} 
-              interactive 
-              onClick={() => {
-                setCurrentVertical(v.id as any);
-                navigate(`/${v.id === 'merchant' ? 'merchant' : v.id}`);
-              }}
-              className="p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer hover:border-vertical-accent transition-colors group"
-            >
-              <div className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mb-2 group-hover:text-white transition-colors">{v.name}</div>
-              <div className="text-lg font-display text-white">{v.gmv}</div>
-            </GlassPanel>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart Column */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <GlassPanel className="p-6 rounded-xl flex flex-col h-[360px]">
-            <h3 className="font-mono text-[10px] tracking-widest text-gray-400 uppercase mb-4">Revenue vs. Operating Expenses (YTD)</h3>
-            <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#D9A84E" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#D9A84E" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#dc2626" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#dc2626" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#666" tick={{fill: '#666', fontSize: 10}} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#666" tick={{fill: '#666', fontSize: 10}} tickLine={false} axisLine={false} tickFormatter={(val) => `¢${val/1000}k`} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0A0A0A', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '12px' }}
-                    itemStyle={{ color: '#D9A84E' }}
-                  />
-                  <Area type="monotone" dataKey="revenue" stroke="#D9A84E" strokeWidth={2} fillOpacity={1} fill="url(#colorRev)" />
-                  <Area type="monotone" dataKey="expenses" stroke="#dc2626" strokeWidth={2} fillOpacity={1} fill="url(#colorExp)" />
-                </AreaChart>
-              </ResponsiveContainer>
+      <div className="grid gap-5 xl:grid-cols-[1.35fr_0.65fr]">
+        <GlassPanel className="overflow-hidden rounded-xl">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+            <div>
+              <h2 className="text-sm font-medium text-white">Cross-ERP intervention board</h2>
             </div>
-          </GlassPanel>
-
-          {/* Cross-Vertical Synergy & Logistics */}
-          <GlassPanel className="p-6 rounded-xl">
-            <h3 className="font-mono text-[10px] tracking-widest text-gray-400 uppercase mb-4">Cross-Vertical Logistics Synergy</h3>
-            <div className="flex flex-col gap-6">
-              
-              <div className="relative flex items-center justify-between">
-                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-surface-border -translate-y-1/2 z-0">
-                  <div className="h-full bg-vertical-accent w-[60%]"></div>
-                </div>
-                
-                <div className="z-10 bg-[#050505] p-2 rounded-lg border border-surface-border text-center w-32">
-                  <Sprout size={20} className="text-green-500 mx-auto mb-2" />
-                  <div className="text-[10px] font-mono text-gray-400 uppercase">Farm Produce</div>
-                  <div className="text-white font-medium text-sm">240 Tons</div>
-                </div>
-
-                <div className="z-10 bg-[#0a0a0a] p-3 rounded-full border-2 border-vertical-accent text-center relative shadow-[0_0_15px_rgba(217,168,78,0.2)]">
-                  <Truck size={24} className="text-vertical-accent" />
-                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-mono text-gray-400">
-                    AutoHub Fleet
-                  </div>
-                </div>
-
-                <div className="z-10 bg-[#050505] p-2 rounded-lg border border-surface-border text-center w-32">
-                  <Package size={20} className="text-blue-500 mx-auto mb-2" />
-                  <div className="text-[10px] font-mono text-gray-400 uppercase">Central Market</div>
-                  <div className="text-white font-medium text-sm">SLA: 94%</div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-surface-border mt-4">
-                 <div>
-                   <div className="text-xs text-gray-500 mb-1">Fleet Utilization</div>
-                   <div className="text-lg font-display text-white">82.4%</div>
-                 </div>
-                 <div>
-                   <div className="text-xs text-gray-500 mb-1">On-Time Delivery</div>
-                   <div className="text-lg font-display text-white">94.1%</div>
-                 </div>
-                 <div>
-                   <div className="text-xs text-gray-500 mb-1">Transit Loss Rate</div>
-                   <div className="text-lg font-display text-green-400">0.8% ↓</div>
-                 </div>
-              </div>
-
-            </div>
-          </GlassPanel>
-        </div>
-
-        {/* AI & Leaderboards Column */}
-        <div className="flex flex-col gap-6">
-          {/* AI Predictive Signals */}
-          <GlassPanel className="p-5 rounded-xl h-[360px] flex flex-col">
-            <h3 className="font-mono text-[10px] tracking-widest text-vertical-accent uppercase mb-4 flex items-center gap-2">
-              <BrainCircuit size={14} /> Actionable AI Signals
-            </h3>
-            <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-              {[
-                { 
-                  id: 'PR-849', 
-                  title: 'Fertilizer Price Drop', 
-                  desc: 'Price dropped 12% in Techiman. Recommend triggering bulk buy protocol for Farmers Market Co-ops.', 
-                  action: 'Trigger Buy', type: 'opportunity' 
-                },
-                { 
-                  id: 'PR-848', 
-                  title: 'Demand Spike: Toyota Parts', 
-                  desc: 'High demand spike for Toyota brake pads in Kumasi. Recommend alerting top 3 parts dealers to adjust stock.', 
-                  action: 'Alert Dealers', type: 'opportunity' 
-                },
-                { 
-                  id: 'PR-847', 
-                  title: 'Logistics SLA Warning', 
-                  desc: 'Route congestion predicted on Accra-Kumasi highway. Re-route 12 pending produce deliveries.', 
-                  action: 'Re-route Fleet', type: 'threat' 
-                },
-              ].map((signal, i) => (
-                <div key={signal.id} className="p-3 rounded-lg bg-surface-glass border border-surface-border flex flex-col gap-2">
-                  <div className="flex justify-between items-start">
-                    <span className="text-xs font-medium text-white">{signal.title}</span>
-                    <span className={`w-2 h-2 rounded-full ${signal.type === 'threat' ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                  </div>
-                  <p className="text-[11px] text-gray-400 leading-snug">{signal.desc}</p>
-                  <button className={`w-full py-1.5 mt-1 rounded text-[10px] font-mono uppercase tracking-wider transition-colors ${
-                    signal.type === 'opportunity' 
-                      ? 'bg-vertical-accent/10 text-vertical-accent hover:bg-vertical-accent/20 border border-vertical-accent/20' 
-                      : 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'
-                  }`}>
-                    {signal.action}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </GlassPanel>
-
-          {/* LTV & Omnichannel */}
-          <GlassPanel className="p-5 rounded-xl">
-            <h3 className="font-mono text-[10px] tracking-widest text-gray-400 uppercase mb-4">Omni-Channel & LTV</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="text-gray-400">Cross-Vertical Retention</span>
-                  <span className="text-white font-mono">42.8%</span>
-                </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-vertical-accent rounded-full" style={{ width: '42.8%' }}></div>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-surface-border">
+            <Network size={16} className="text-vertical-accent" />
+          </div>
+          <div className="divide-y divide-white/[0.06]">
+            {operatingSignals.map((signal) => (
+              <button
+                key={signal.vertical}
+                onClick={() => navigate(signal.path)}
+                className="grid w-full gap-3 px-5 py-4 text-left transition hover:bg-white/[0.025] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-vertical-accent md:grid-cols-[0.6fr_1.1fr_1.2fr_0.6fr_0.7fr_auto] md:items-center"
+              >
+                <div className="text-xs font-medium text-white">{signal.vertical}</div>
+                <div className="text-xs text-gray-400">{signal.constraint}</div>
+                <div className="text-xs text-gray-200">{signal.decision}</div>
+                <div className="font-mono text-[10px] text-red-300">{signal.value}</div>
                 <div>
-                  <div className="text-[10px] font-mono text-gray-500 uppercase">Avg LTV</div>
-                  <div className="text-sm text-white font-medium">GHS 14,250</div>
+                  <div className="mb-1 flex items-center justify-between text-[8px] font-mono uppercase text-gray-600"><span>Confidence</span><span>{signal.confidence}%</span></div>
+                  <div className="h-1 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-vertical-accent/70" style={{ width: `${signal.confidence}%` }} /></div>
                 </div>
-                <div>
-                  <div className="text-[10px] font-mono text-gray-500 uppercase">Comm Splits</div>
-                  <div className="text-sm text-white font-medium">GHS 125K pending</div>
-                </div>
+                <ArrowRight size={13} className="text-vertical-accent" />
+              </button>
+            ))}
+          </div>
+        </GlassPanel>
+
+        <GlassPanel className="rounded-xl p-5">
+          <div className="flex items-center gap-2 text-[9px] font-mono uppercase tracking-wider text-red-300">
+            <ShieldAlert size={14} /> Institutional readiness gaps
+          </div>
+          <div className="mt-5 space-y-3">
+            {[
+              ['Source lineage', '74%', 'Payment and field-event lineage incomplete'],
+              ['Entity resolution', '81%', 'Cross-product identity duplicates remain'],
+              ['Evidence currency', '86%', 'Title, licence and assay expiry risk'],
+              ['Reconciliation', '92%', 'MoMo and payout breaks outside tolerance'],
+            ].map(([label, value, detail]) => (
+              <div key={label} className="rounded-lg border border-white/[0.07] bg-black/20 p-3">
+                <div className="flex items-center justify-between"><span className="text-xs text-gray-300">{label}</span><span className="font-mono text-xs text-amber-300">{value}</span></div>
+                <div className="mt-2 text-[10px] leading-relaxed text-gray-600">{detail}</div>
               </div>
-            </div>
-          </GlassPanel>
-        </div>
+            ))}
+          </div>
+          <button onClick={() => navigate('/intelligence?view=ontology')} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-vertical-accent/25 bg-vertical-accent/[0.07] py-2.5 text-[10px] font-mono uppercase tracking-wider text-vertical-accent transition hover:bg-vertical-accent/[0.12]">
+            Open ontology controls <ArrowRight size={12} />
+          </button>
+        </GlassPanel>
       </div>
 
-      {/* Leaderboards Row */}
       <div>
-        <h3 className="text-xs font-mono text-gray-500 uppercase tracking-widest mb-4 border-b border-surface-border pb-2">Merchant & Operator Leaderboards</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          <GlassPanel className="p-5 rounded-xl">
-            <div className="flex items-center gap-2 mb-4 text-white">
-              <Wrench size={16} className="text-gray-400" />
-              <h4 className="font-medium">Top Mechanics (AutoHub)</h4>
-            </div>
-            <div className="flex justify-between px-2.5 pb-2 text-[10px] font-mono text-gray-500 uppercase border-b border-surface-border mb-2">
-              <span>Operator</span>
-              <div className="flex gap-4 text-right">
-                <span className="w-12">Jobs</span>
-                <span className="w-8">CSAT</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <LeaderboardRow rank={1} name="Kwame Osei" metric1="142" metric2="4.9/5" icon={Wrench} />
-              <LeaderboardRow rank={2} name="Adinkra Workshop" metric1="118" metric2="4.8/5" />
-              <LeaderboardRow rank={3} name="Sarah Mensah" metric1="104" metric2="4.7/5" />
-              <LeaderboardRow rank={4} name="Osu Auto Repairs" metric1="95" metric2="4.6/5" />
-              <LeaderboardRow rank={5} name="FixIt Garage" metric1="82" metric2="4.4/5" />
-            </div>
-          </GlassPanel>
-
-          <GlassPanel className="p-5 rounded-xl">
-            <div className="flex items-center gap-2 mb-4 text-white">
-              <Package size={16} className="text-gray-400" />
-              <h4 className="font-medium">Top Parts Dealers (AutoHub)</h4>
-            </div>
-            <div className="flex justify-between px-2.5 pb-2 text-[10px] font-mono text-gray-500 uppercase border-b border-surface-border mb-2">
-              <span>Dealer</span>
-              <div className="flex gap-4 text-right">
-                <span className="w-16">Revenue</span>
-                <span className="w-8">Fulf.</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <LeaderboardRow rank={1} name="AGL Parts Depot" metric1="¢840K" metric2="99%" />
-              <LeaderboardRow rank={2} name="Kumasi Motors" metric1="¢620K" metric2="97%" />
-              <LeaderboardRow rank={3} name="Genuine Spares" metric1="¢415K" metric2="98%" />
-              <LeaderboardRow rank={4} name="Okaishie Auto" metric1="¢280K" metric2="94%" />
-              <LeaderboardRow rank={5} name="Tech Auto" metric1="¢195K" metric2="91%" />
-            </div>
-          </GlassPanel>
-
-          <GlassPanel className="p-5 rounded-xl">
-            <div className="flex items-center gap-2 mb-4 text-white">
-              <Sprout size={16} className="text-gray-400" />
-              <h4 className="font-medium">Top Farmers Co-ops</h4>
-            </div>
-            <div className="flex justify-between px-2.5 pb-2 text-[10px] font-mono text-gray-500 uppercase border-b border-surface-border mb-2">
-              <span>Co-op</span>
-              <div className="flex gap-4 text-right">
-                <span className="w-12">Vol (T)</span>
-                <span className="w-10">Yield</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <LeaderboardRow rank={1} name="Techiman Grain" metric1="4,250" metric2="104%" />
-              <LeaderboardRow rank={2} name="Akumadan Farms" metric1="3,840" metric2="98%" />
-              <LeaderboardRow rank={3} name="Northern Agri" metric1="2,910" metric2="112%" />
-              <LeaderboardRow rank={4} name="Sunyani Co-op" metric1="2,100" metric2="95%" />
-              <LeaderboardRow rank={5} name="Volta Cashew" metric1="1,850" metric2="88%" />
-            </div>
-          </GlassPanel>
-          
+        <div className="mb-3 text-[9px] font-mono uppercase tracking-[0.18em] text-gray-600">Enter an operating ERP</div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {ERP_SWITCHER.filter((item) => item.path !== '/').map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="group flex items-center gap-3 rounded-xl border border-white/[0.08] bg-black/20 p-3 text-left transition hover:border-vertical-accent/35 hover:bg-white/[0.03] focus:outline-none focus:ring-2 focus:ring-vertical-accent"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-gray-500 transition group-hover:border-vertical-accent/20 group-hover:text-vertical-accent"><Icon size={16} /></div>
+                <div><div className="text-xs text-gray-200">{item.label}</div><div className="mt-1 text-[8px] font-mono uppercase tracking-wider text-gray-700">Independent ERP</div></div>
+                <ArrowRight size={12} className="ml-auto text-gray-700 group-hover:text-vertical-accent" />
+              </button>
+            );
+          })}
         </div>
       </div>
     </motion.div>
   );
 };
-

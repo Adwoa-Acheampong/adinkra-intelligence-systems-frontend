@@ -1,150 +1,54 @@
-import React from 'react';
-import { GlassPanel } from '../../components/ui/GlassPanel';
-import { useTenant } from '../../context/TenantContext';
-import { Wallet, ShoppingCart, TrendingUp, Users, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Building2, MapPin } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { DecisionInsightDashboard } from '../../components/analytics/DecisionInsightDashboard';
+import { VERTICAL_ERPS } from '../../config/erpWorkspaces';
+import { useTenant } from '../../context/TenantContext';
+import { getTenantOverviewInsight } from '../../data/erpInsightCatalog';
 
 export const TenantOverview = () => {
   const { currentTenant } = useTenant();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   if (!currentTenant) return null;
+  const workspace = VERTICAL_ERPS[currentTenant.verticalId];
+  if (!workspace) return null;
+
+  const insight = getTenantOverviewInsight(workspace, currentTenant);
+  const selected = searchParams.get('drill') || '';
+
+  const setSelected = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('drill', value);
+    else next.delete('drill');
+    setSearchParams(next, { replace: true });
+  };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6 max-w-7xl mx-auto"
+      className="mx-auto max-w-[1560px] space-y-6 pb-10"
     >
-      <div className="flex items-center gap-4 mb-6 border-b border-surface-border pb-4 overflow-x-auto custom-scrollbar">
-        <button className="px-4 py-2 bg-vertical-accent text-[#050505] font-medium text-sm rounded-full whitespace-nowrap flex items-center gap-2">
-          <ShoppingCart size={16} />
-          Sales
-        </button>
-        <button className="px-4 py-2 bg-surface-glass text-gray-300 hover:text-white font-medium text-sm rounded-full whitespace-nowrap transition-colors">
-          Operations
-        </button>
-        <button className="px-4 py-2 bg-surface-glass text-gray-300 hover:text-white font-medium text-sm rounded-full whitespace-nowrap transition-colors">
-          HR
-        </button>
-        <button className="px-4 py-2 bg-surface-glass text-gray-300 hover:text-white font-medium text-sm rounded-full whitespace-nowrap transition-colors">
-          Finance
-        </button>
-        <button className="px-4 py-2 bg-surface-glass text-gray-300 hover:text-white font-medium text-sm rounded-full whitespace-nowrap transition-colors">
-          Inventory
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <GlassPanel className="p-6 rounded-xl relative overflow-hidden bg-white/5 border-white/10">
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-xs font-mono font-bold tracking-widest text-gray-400">REVENUE</div>
-            <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
-              <Wallet size={14} />
-            </div>
-          </div>
-          <div className="text-2xl font-display font-bold text-white mb-1">GHS 349,140.00</div>
-          <div className="text-sm text-gray-500">72 orders</div>
-        </GlassPanel>
-
-        <GlassPanel className="p-6 rounded-xl relative overflow-hidden bg-white/5 border-white/10">
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-xs font-mono font-bold tracking-widest text-gray-400">ORDERS</div>
-            <div className="w-8 h-8 rounded-full bg-black border border-white/10 flex items-center justify-center">
-              <ShoppingCart size={14} className="text-gray-300" />
-            </div>
-          </div>
-          <div className="text-2xl font-display font-bold text-white mb-1">72</div>
-          <div className="text-sm text-gray-500">2 channels</div>
-        </GlassPanel>
-
-        <GlassPanel className="p-6 rounded-xl relative overflow-hidden bg-white/5 border-white/10">
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-xs font-mono font-bold tracking-widest text-gray-400">AVERAGE ORDER</div>
-            <div className="w-8 h-8 rounded-full bg-black border border-white/10 flex items-center justify-center">
-              <TrendingUp size={14} className="text-gray-300" />
-            </div>
-          </div>
-          <div className="text-2xl font-display font-bold text-white mb-1">GHS 1,034.03</div>
-          <div className="text-sm text-gray-500">Per transaction</div>
-        </GlassPanel>
-
-        <GlassPanel className="p-6 rounded-xl relative overflow-hidden bg-white/5 border-white/10">
-          <div className="flex justify-between items-start mb-6">
-            <div className="text-xs font-mono font-bold tracking-widest text-gray-400">CUSTOMERS</div>
-            <div className="w-8 h-8 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
-              <Users size={14} />
-            </div>
-          </div>
-          <div className="text-2xl font-display font-bold text-white mb-1">100</div>
-          <div className="text-sm text-gray-500">On the ledger</div>
-        </GlassPanel>
-      </div>
-
-      <div className="p-4 rounded-xl border border-green-500/30 bg-green-500/10 flex items-start gap-4">
-        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-          <CheckCircle2 size={18} className="text-[#050505]" />
-        </div>
+      <div className="flex flex-col justify-between gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end">
         <div>
-          <h4 className="font-bold text-green-400 text-sm tracking-wider uppercase mb-1">ALL CLEAR</h4>
-          <p className="text-sm text-gray-300">No critical signals across operations. Inventory, creditors, workshop and marketing are all within thresholds.</p>
+          <div className="mb-2 flex items-center gap-2 text-[9px] font-mono uppercase tracking-[0.2em] text-vertical-accent">
+            <Building2 size={12} /> {workspace.shortName} / Tenant ERP
+          </div>
+          <h1 className="text-3xl font-display font-semibold tracking-tight text-white">{currentTenant.name}</h1>
+          <div className="mt-3 flex flex-wrap gap-2 text-[9px] font-mono uppercase tracking-wider text-gray-500">
+            <span className="rounded border border-white/[0.08] px-2 py-1">{currentTenant.type.replace(/_/g, ' ')}</span>
+            <span className="flex items-center gap-1 rounded border border-white/[0.08] px-2 py-1"><MapPin size={10} /> Ghana</span>
+            <span className="rounded border border-white/[0.08] px-2 py-1">{insight.meta.observations}</span>
+            <span className="rounded border border-emerald-400/20 bg-emerald-400/[0.05] px-2 py-1 text-emerald-300">{insight.meta.coverage}% coverage</span>
+          </div>
+        </div>
+        <div className="rounded-lg border border-amber-400/20 bg-amber-400/[0.05] px-3 py-2 text-[9px] font-mono uppercase tracking-wider text-amber-200">
+          Mock operating dataset
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <GlassPanel className="lg:col-span-2 p-6 rounded-xl bg-white/5 border-white/10 min-h-[300px] flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-medium text-white flex items-center gap-2">
-              <TrendingUp size={16} /> Revenue — last 30 days
-            </h3>
-            <span className="text-sm text-gray-400">GHS 90,550.00 • 83 orders</span>
-          </div>
-          <div className="flex-1 border-b border-white/10 flex items-end relative overflow-hidden">
-             {/* Mock area chart line */}
-             <svg viewBox="0 0 100 40" className="absolute bottom-0 w-full h-full preserve-3d" preserveAspectRatio="none">
-               <path d="M0,40 L0,25 L10,10 L20,30 L30,20 L40,35 L50,15 L60,30 L70,5 L80,35 L90,15 L100,25 L100,40 Z" fill="url(#grad)" opacity="0.3" />
-               <path d="M0,25 L10,10 L20,30 L30,20 L40,35 L50,15 L60,30 L70,5 L80,35 L90,15 L100,25" fill="none" stroke="var(--theme-accent)" strokeWidth="0.5" />
-               <defs>
-                 <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                   <stop offset="0%" stopColor="var(--theme-accent)" />
-                   <stop offset="100%" stopColor="transparent" />
-                 </linearGradient>
-               </defs>
-             </svg>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-2">
-            <span>06-26</span>
-            <span className="font-bold text-white">Today: GHS 0.00</span>
-            <span>07-25</span>
-          </div>
-        </GlassPanel>
-
-        <GlassPanel className="p-6 rounded-xl bg-white/5 border-white/10">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-medium text-white flex items-center gap-2">
-               Sales by channel
-            </h3>
-            <span className="text-sm text-gray-400">7 channels</span>
-          </div>
-          <div className="space-y-4">
-            {[
-              { label: 'Walk-In', value: '259,635.00', count: 274, pct: 100 },
-              { label: 'Delivery', value: '48,750.00', count: 41, pct: 30 },
-              { label: 'Phone', value: '23,450.00', count: 20, pct: 15 },
-              { label: 'WhatsApp', value: '2,505.00', count: 1, pct: 5 },
-            ].map(ch => (
-              <div key={ch.label}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-white">{ch.label}</span>
-                  <span className="text-gray-400">GHS {ch.value} • {ch.count} orders</span>
-                </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-white rounded-full" style={{ width: `${ch.pct}%` }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </GlassPanel>
-      </div>
+      <DecisionInsightDashboard insight={insight} selected={selected} onSelect={setSelected} />
     </motion.div>
   );
 };
