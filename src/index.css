@@ -1,5 +1,38 @@
 @import "tailwindcss";
 
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .agl-print-root,
+  .agl-print-root * {
+    visibility: visible !important;
+  }
+
+  .agl-print-root {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: #111 !important;
+    box-shadow: none !important;
+  }
+
+  .agl-no-print {
+    display: none !important;
+  }
+}
+
 @theme {
   --font-display: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;

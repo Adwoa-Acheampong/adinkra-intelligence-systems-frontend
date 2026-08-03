@@ -29,6 +29,8 @@ import { GenericEntityTable } from '../../components/tenant/GenericEntityTable';
 import { AutoInventoryWorkspace } from './AutoInventoryWorkspace';
 import { AutoSalesWorkspace } from './AutoSalesWorkspace';
 import { AutoFixbotWorkspace } from './AutoFixbotWorkspace';
+import { AglFinanceAnalyticsWorkspace } from './AglFinanceAnalyticsWorkspace';
+import { AglAnalyticsWorkspace } from './AglAnalyticsWorkspace';
 
 const statusOrder: WorkOrderStatus[] = ['Diagnosis', 'Awaiting parts', 'In progress', 'Quality control', 'Ready'];
 
@@ -59,10 +61,12 @@ const money = new Intl.NumberFormat('en-GH', {
 });
 
 export const AutoTenantModule = ({ tenant, moduleId }: { tenant: Tenant; moduleId: string }) => {
+  if (tenant.id === 'agl' && moduleId !== 'finance') return <AglAnalyticsWorkspace tenant={tenant} moduleId={moduleId} />;
   if (moduleId === 'fixbot') return <AutoFixbotWorkspace tenant={tenant} />;
   if (moduleId === 'workshop') return <AutoWorkshopWorkspace tenant={tenant} />;
   if (moduleId === 'inventory') return <AutoInventoryWorkspace tenant={tenant} />;
   if (moduleId === 'sales') return <AutoSalesWorkspace tenant={tenant} />;
+  if (tenant.id === 'agl' && moduleId === 'finance') return <AglFinanceAnalyticsWorkspace tenant={tenant} />;
   return <GenericEntityTable />;
 };
 

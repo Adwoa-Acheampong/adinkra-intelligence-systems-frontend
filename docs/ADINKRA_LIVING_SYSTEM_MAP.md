@@ -2,7 +2,7 @@
 
 **Purpose:** The maintained map of what exists, what question it answers, what feeds it, and what remains incomplete.  
 **Update rule:** Every accepted build slice updates this file in the same change.  
-**Last reviewed:** 28 July 2026
+**Last reviewed:** 29 July 2026
 
 ## 1. Status Legend
 
@@ -76,13 +76,16 @@ BLKK Star Hub business metrics do not move into Websites & Apps. Websites & Apps
 | Analytics Workshop | `/autos/tenant/agl/analytics/workshop` | Investigate workshop capacity, promises, jobs, and evidence | `AutoOperationsPort` fixture | Analytical baseline | Shared analytical projections |
 | Analytics Inventory | `/autos/tenant/agl/analytics/inventory` | Investigate stock constraints, provenance, and trusted valuation | `AutoInventoryOperationsPort` fixture | Analytical baseline | Shared analytical projections |
 | Analytics Sales | `/autos/tenant/agl/analytics/sales` | Investigate sales, tenders, credit, and cross-ledger evidence | `AutoSalesOperationsPort` fixture | Analytical baseline | Shared analytical projections |
-| AGL operational ERP | `/autos/tenant/agl/erp/work-orders` | Run AGL through operational records and commands | `aglErpRepository` and typed operational contracts | Operational spine implemented | Complete customer-to-cash depth and backend adapters |
-| ERP service operations | `/autos/tenant/agl/erp/{fixbot,intake,appointments,job-board,work-orders,vehicles,mechanics,inspections,recalls,complaints}` | Create, progress, assign, verify, and close automotive service work | Shared persistent mock repository | Operational baseline | Full job-card evidence and resource transactions |
-| ERP inventory and procurement | `/autos/tenant/agl/erp/{parts,stock-ledger,stock-movements,purchase-orders,suppliers}` | Maintain exact stock and supplier commitments | Shared persistent mock repository | Operational baseline | Reservation/issue/return and PO receipt depth |
-| ERP sales and finance | `/autos/tenant/agl/erp/{new-sale,sales-ledger,customers,quotations,invoices,payments,profit-loss,expenses,petty-cash,creditors,debtors,reconciliation}` | Operate customer commerce and financial ledgers | Shared persistent mock repository | Operational baseline | Journal and period controls |
+| AGL operational ERP | `/autos/tenant/agl/erp/work-orders` | Run AGL through operational records and commands | `aglErpRepository` and typed operational contracts | Operational spine implemented | Complete scheduling depth and backend adapters |
+| ERP service operations | `/autos/tenant/agl/erp/{fixbot,intake,appointments,job-board,work-orders,job-cards,job-corrections,vehicle-handovers,vehicles,mechanics,inspections,recalls,complaints}` | Create, schedule, progress, assign, verify, invoice, hand over, correct, settle, and close automotive service work | Shared repository plus intake, appointment and service workflow facades | Connected operating loop implemented | Backend transaction adapters, media/signature transport, permission enforcement |
+| ERP connected intake | `/autos/tenant/agl/erp/intake` | Who is the customer, which exact vehicle arrived, what condition and authority were recorded, and which appointment/VSR owns the work? | Customer, vehicle, intake, appointment, work order, Kanban mirror, and correlated audit commands | Operational | Backend transaction adapter, media upload transport, signature evidence |
+| ERP appointment control | `/autos/tenant/agl/erp/appointments` | Which bay and qualified mechanic can accept this vehicle without a capacity conflict? | Customer/vehicle masters, duration, bay/mechanic commitments, check-in and VSR conversion | Operational | Backend concurrency lock and notification transport |
+| ERP workshop job card | `/autos/tenant/agl/erp/job-cards` | What must be recorded or authorized to move this vehicle from concern to safe release? | Work order, labour, job parts, stock movements, inspections, invoice, payments, evidence, handover, corrections and audit | Operational | Backend adapter, upload transport, role enforcement |
+| ERP inventory and procurement | `/autos/tenant/agl/erp/{parts,inventory-control,stock-ledger,stock-movements,purchase-orders,suppliers}` | Maintain exact stock and supplier commitments | Procurement, count, transfer, provenance, quarantine and controlled stock facades | Exact-location control operational | Backend locking, barcode/media transport, permission enforcement |
+| ERP sales and finance | `/autos/tenant/agl/erp/{new-sale,sales-ledger,customers,quotations,invoices,payments,profit-loss,expenses,petty-cash,creditors,debtors,reconciliation,finance-journals}` | Operate customer commerce and financial ledgers | Shared repository plus controlled finance facade and immutable journal | Expense, cash and reconciliation control operational | Tax close, statement import, creditor settlement |
 | ERP marketing | `/autos/tenant/agl/erp/{campaigns,promotions,leads,marketing-spend}` | Operate campaigns, promotions, attributed leads, and spend records | Shared persistent mock repository | Operational baseline | Lead-to-customer and sale attribution |
-| ERP people | `/autos/tenant/agl/erp/{employees,departments,attendance,leave,payroll,payslips,performance}` | Operate employment, time, payroll, and performance records | Shared persistent mock repository | Operational baseline | Payroll-run engine and restricted evidence |
-| ERP governance | `/autos/tenant/agl/erp/{manager-desk,documents,business-reports,managerial-reports,audit-log,roles,settings}` | Approve work, retain documents, reproduce reports, and identify every actor action | Shared persistent mock repository | Operational baseline | Role enforcement, document versions, backend audit |
+| ERP people | `/autos/tenant/agl/erp/{employees,departments,attendance,leave,payroll,payslips,performance,contracts,employee-cases}` | Operate employment, time, payroll, performance, contract and employee-relations records | Payroll plus contract-version and restricted-case workflow facades | Payroll, contract and case controls operational | Payroll correction run, restricted backend policy enforcement |
+| ERP governance | `/autos/tenant/agl/erp/{manager-desk,documents,business-reports,managerial-reports,audit-log,roles,settings}` | Approve work, retain documents, reproduce reports, and identify every actor action | Shared repository plus controlled document versions | Document version control operational | Report-run parameters, role enforcement, backend audit |
 
 ## 6. Autos Contract Map
 
@@ -153,6 +156,12 @@ All entries below are typed in `src/intelligence/metricRegistry.ts`, render thro
 
 | Date | Change |
 |---|---|
+| 30 Jul 2026 | Added exact-location stock counts/transfers/provenance, expense and petty-cash approval, tender reconciliation with immutable journals, signed contract versions, restricted employment case chronology, termination evidence guards, and controlled document versions; browser-verified each new operating loop. |
+| 30 Jul 2026 | Added capacity-first appointment control, PO approval-to-stock receipt, controlled payroll batches, structured vehicle handovers, and approved closed-job corrections; browser-verified every cross-module mutation and audit correlation. |
+| 30 Jul 2026 | Ported and adapted AGL Ops intake depth without replacing Adinkra modules: richer customer and vehicle capture now opens a correlated appointment, VSR Kanban item, and deep-linked dedicated Job Card while retaining every independent register. |
+| 29 Jul 2026 | Verified appointment check-in and conversion into a populated Job Card, with the appointment status event and created work order sharing a correlation identity but retaining unique audit event IDs. |
+| 29 Jul 2026 | Added the purpose-built AGL Job Cards operating workspace and verified diagnosis, labour, matched stock issue, estimate, invoice, evidence, QC, payment, release, persistence, and audit as one VSR chain. |
+| 29 Jul 2026 | Replaced destructive mock-state upgrades with merge-based schema migration so seeded contract additions preserve operator-created subledgers and live balances. |
 | 28 Jul 2026 | Replaced the generic AGL FixBot route with purpose-led grouped columns, donut, scatter, line/area, funnel and histogram views; every chart filters or drills to evidence-bearing cases. |
 | 28 Jul 2026 | Implemented Phase 1 frontend foundation: route-scope and ontology registries, 24 governed metrics, cross-domain search, evidence drill, governance policies, and reusable intelligence states. |
 | 28 Jul 2026 | Added the master Mermaid mindmap as the primary system orientation, joining every scale, ERP, decision, action, and metric to its original evidence. |

@@ -158,6 +158,9 @@ export const getAglErpModuleSections = (): ModuleSection[] => [
       { name: 'Appointments', path: 'appointments', icon: <CalendarClock size={18} /> },
       { name: 'Job board', path: 'job-board', icon: <Gauge size={18} /> },
       { name: 'Work orders', path: 'work-orders', icon: <ClipboardList size={18} /> },
+      { name: 'Job cards', path: 'job-cards', icon: <ClipboardCheck size={18} /> },
+      { name: 'Job corrections', path: 'job-corrections', icon: <History size={18} /> },
+      { name: 'Vehicle handovers', path: 'vehicle-handovers', icon: <Car size={18} /> },
       { name: 'Vehicles', path: 'vehicles', icon: <Car size={18} /> },
       { name: 'Mechanic tracker', path: 'mechanics', icon: <Wrench size={18} /> },
       { name: 'Inspections & QC', path: 'inspections', icon: <ClipboardCheck size={18} /> },
@@ -169,6 +172,7 @@ export const getAglErpModuleSections = (): ModuleSection[] => [
     label: 'Inventory & procurement',
     modules: [
       { name: 'Parts catalogue', path: 'parts', icon: <Package size={18} /> },
+      { name: 'Inventory control', path: 'inventory-control', icon: <ShieldCheck size={18} /> },
       { name: 'Stock ledger', path: 'stock-ledger', icon: <Warehouse size={18} /> },
       { name: 'Stock movements', path: 'stock-movements', icon: <PackageOpen size={18} /> },
       { name: 'Purchase orders', path: 'purchase-orders', icon: <PackageCheck size={18} /> },
@@ -199,12 +203,14 @@ export const getAglErpModuleSections = (): ModuleSection[] => [
   {
     label: 'Finance',
     modules: [
+      { name: 'Finance settings & tax', path: 'finance-controls', icon: <Settings size={18} /> },
       { name: 'Profit & loss', path: 'profit-loss', icon: <FileChartColumn size={18} /> },
       { name: 'Expenses', path: 'expenses', icon: <BadgeDollarSign size={18} /> },
       { name: 'Petty cash', path: 'petty-cash', icon: <WalletCards size={18} /> },
       { name: 'Creditors', path: 'creditors', icon: <Banknote size={18} /> },
       { name: 'Debtors', path: 'debtors', icon: <DollarSign size={18} /> },
       { name: 'Reconciliation', path: 'reconciliation', icon: <ShieldCheck size={18} /> },
+      { name: 'Finance journal', path: 'finance-journals', icon: <ReceiptText size={18} /> },
     ],
   },
   {
@@ -212,6 +218,9 @@ export const getAglErpModuleSections = (): ModuleSection[] => [
     modules: [
       { name: 'Employees', path: 'employees', icon: <Users size={18} /> },
       { name: 'Departments', path: 'departments', icon: <Building2 size={18} /> },
+      { name: 'Organisation & positions', path: 'organisation', icon: <Building2 size={18} /> },
+      { name: 'Onboarding', path: 'onboarding', icon: <UserCog size={18} /> },
+      { name: 'Certifications', path: 'certifications', icon: <ShieldCheck size={18} /> },
       { name: 'Attendance', path: 'attendance', icon: <FileClock size={18} /> },
       { name: 'Leave & overtime', path: 'leave', icon: <CalendarClock size={18} /> },
       { name: 'Payroll', path: 'payroll', icon: <Banknote size={18} /> },
@@ -219,6 +228,9 @@ export const getAglErpModuleSections = (): ModuleSection[] => [
       { name: 'Performance', path: 'performance', icon: <Activity size={18} /> },
       { name: 'Schedules', path: 'schedules', icon: <CalendarClock size={18} /> },
       { name: 'Training', path: 'training', icon: <GraduationCap size={18} /> },
+      { name: 'Staff tasks', path: 'tasks', icon: <ClipboardCheck size={18} /> },
+      { name: 'Staff portal', path: 'staff-portal', icon: <UserRound size={18} /> },
+      { name: 'Clock kiosk', path: 'clock-kiosk', icon: <FileClock size={18} /> },
       { name: 'Contracts', path: 'contracts', icon: <ClipboardSignature size={18} /> },
       { name: 'Employee cases', path: 'employee-cases', icon: <ShieldCheck size={18} /> },
     ],
@@ -226,6 +238,7 @@ export const getAglErpModuleSections = (): ModuleSection[] => [
   {
     label: 'Management & records',
     modules: [
+      { name: 'Daily operations', path: 'daily-entry', icon: <ClipboardList size={18} /> },
       { name: 'Manager desk', path: 'manager-desk', icon: <UserCog size={18} /> },
       { name: 'Documents', path: 'documents', icon: <FileText size={18} /> },
       { name: 'Business reports', path: 'business-reports', icon: <FileChartColumn size={18} /> },
@@ -233,6 +246,7 @@ export const getAglErpModuleSections = (): ModuleSection[] => [
       { name: 'Forms', path: 'forms', icon: <ClipboardSignature size={18} /> },
       { name: 'Data archives', path: 'archives', icon: <Archive size={18} /> },
       { name: 'Exports', path: 'exports', icon: <DownloadIcon /> },
+      { name: 'Reminders', path: 'reminders', icon: <CalendarClock size={18} /> },
       { name: 'Notifications', path: 'notifications', icon: <Bell size={18} /> },
       { name: 'Audit log', path: 'audit-log', icon: <History size={18} /> },
     ],

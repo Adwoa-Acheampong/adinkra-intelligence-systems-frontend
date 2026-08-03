@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
+  ChevronDown,
   ChevronsRight,
   Grid2X2,
   PanelLeftClose,
@@ -138,6 +139,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ tenant, tenantMode = 'analytic
     return location.pathname === href || location.pathname.startsWith(`${href}/`);
   };
 
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const storageKey = `adinkra_sidebar_sections:${context.homePath}`;
+    const stored = window.localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        setOpenSections(JSON.parse(stored) as Record<string, boolean>);
+        return;
+      } catch {
+        window.localStorage.removeItem(storageKey);
+      }
+    }
+    const activeSection = context.sections.find((section) => section.items.some((item) => isActive(item.href)));
+    setOpenSections(activeSection
+      ? { [activeSection.label]: true }
+      : { [context.sections[0]?.label ?? 'Navigation']: true });
+  }, [context.homePath]);
+
+  useEffect(() => {
+    const activeSection = context.sections.find((section) => section.items.some((item) => isActive(item.href)));
+    if (!activeSection) return;
+    setOpenSections((current) => (
+      current[activeSection.label] ? current : { ...current, [activeSection.label]: true }
+    ));
+  }, [location.pathname, context.sections]);
+
+  const toggleSection = (label: string) => {
+    setOpenSections((current) => {
+      const next = { ...current, [label]: !current[label] };
+      window.localStorage.setItem(`adinkra_sidebar_sections:${context.homePath}`, JSON.stringify(next));
+      return next;
+    });
+  };
+
   const moveToERP = (path: string, verticalId: VerticalId) => {
     setCurrentVertical(verticalId);
     navigate(path);
@@ -201,10 +237,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ tenant, tenantMode = 'analytic
         className={`custom-scrollbar flex-1 overflow-x-hidden overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`}
       >
         {context.sections.map((section) => (
-          <div key={section.label} className="mb-5">
-            {!collapsed && <div className="mb-2 px-3 text-[9px] font-mono uppercase tracking-[0.2em] text-gray-600">{section.label}</div>}
+          <div key={section.label} className="mb-2">
+            {!collapsed && (
+              <button
+                onClick={() => toggleSection(section.label)}
+                className="group mb-1 flex min-h-9 w-full items-center gap-2 rounded-lg border border-transparent px-3 text-left transition hover:border-cyan-300/10 hover:bg-cyan-300/[0.035] focus:outline-none focus:ring-2 focus:ring-cyan-300/40"
+                aria-expanded={Boolean(openSections[section.label])}
+                aria-controls={`sidebar-section-${section.label.replace(/\W+/g, '-').toLowerCase()}`}
+              >
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-300 shadow-[0_0_9px_rgba(103,232,249,0.7)]" />
+                <span className="min-w-0 flex-1 truncate font-mono text-[9px] font-semibold uppercase tracking-[0.19em] text-cyan-300">{section.label}</span>
+                <ChevronDown size={13} className={`shrink-0 text-cyan-300/60 transition-transform duration-200 ${openSections[section.label] ? 'rotate-0' : '-rotate-90'}`} />
+              </button>
+            )}
             {collapsed && <div className="mx-auto mb-2 h-px w-6 bg-white/10" />}
-            <div className="space-y-1">
+            {(collapsed || openSections[section.label]) && (
+            <div id={`sidebar-section-${section.label.replace(/\W+/g, '-').toLowerCase()}`} className="space-y-1 pb-2">
               {section.items.map((item) => {
                 const active = isActive(item.href);
                 return (
@@ -229,6 +277,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ tenant, tenantMode = 'analytic
                 );
               })}
             </div>
+            )}
           </div>
         ))}
       </motion.nav>

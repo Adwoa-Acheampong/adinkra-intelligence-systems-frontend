@@ -2,8 +2,10 @@ import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Bot,
+  Boxes,
   Check,
   ChevronRight,
   CircleDollarSign,
@@ -30,6 +32,7 @@ import type {
 } from '../../erp/agl/contracts';
 import { getAglModuleDefinition } from '../../erp/agl/moduleDefinitions';
 import { aglErpRepository } from '../../erp/agl/repository';
+import { buildAglOperationalSummary } from '../../erp/agl/operationalSummary';
 
 const money = new Intl.NumberFormat('en-GH', {
   style: 'currency',
@@ -43,6 +46,7 @@ const actor = {
 };
 
 export const AGLERPWorkspace = ({ tenant, moduleId }: { tenant: Tenant; moduleId: string }) => {
+  const navigate = useNavigate();
   const definition = useMemo(() => getAglModuleDefinition(moduleId), [moduleId]);
   const [version, setVersion] = useState(0);
   const [query, setQuery] = useState('');
@@ -72,8 +76,10 @@ export const AGLERPWorkspace = ({ tenant, moduleId }: { tenant: Tenant; moduleId
     return records.filter((item) => JSON.stringify(item).toLowerCase().includes(normalized));
   }, [query, records]);
 
-  const openCount = records.filter((item) => !['Completed', 'Closed', 'Paid', 'Processed', 'Settled', 'Archived'].includes(item.status)).length;
-  const totalAmount = records.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
+  const summaryMeasures = useMemo(
+    () => buildAglOperationalSummary(moduleId, definition, records),
+    [moduleId, definition, records],
+  );
   const actionLabel = moduleId === 'audit-log' ? 'Export audit' : definition.primaryAction;
 
   const handlePrimaryAction = () => {
@@ -129,14 +135,22 @@ export const AGLERPWorkspace = ({ tenant, moduleId }: { tenant: Tenant; moduleId
 
       {moduleId !== 'audit-log' && (
         <section aria-label={`${definition.title} operational summary`} className="grid gap-3 sm:grid-cols-3">
-          <OperationalMeasure label="Records in scope" value={String(records.length)} detail={`Active ${definition.entityName} register`} icon={<FileCheck2 size={15} />} />
-          <OperationalMeasure label="Require attention" value={String(openCount)} detail="Not yet closed or settled" icon={<Clock3 size={15} />} warning={openCount > 0} />
-          <OperationalMeasure
-            label="Recorded value"
-            value={money.format(totalAmount)}
-            detail="Value on this operational page"
-            icon={<CircleDollarSign size={15} />}
-          />
+          {summaryMeasures.map((measure) => (
+            <OperationalMeasure
+              key={measure.label}
+              label={measure.label}
+              value={measure.semantic === 'money' ? money.format(measure.value) : measure.value.toLocaleString()}
+              detail={measure.detail}
+              icon={measure.semantic === 'money'
+                ? <CircleDollarSign size={15} />
+                : measure.semantic === 'quantity'
+                  ? <Boxes size={15} />
+                  : measure.semantic === 'attention'
+                    ? <Clock3 size={15} />
+                    : <FileCheck2 size={15} />}
+              warning={measure.warning}
+            />
+          ))}
         </section>
       )}
 
@@ -167,7 +181,15 @@ export const AGLERPWorkspace = ({ tenant, moduleId }: { tenant: Tenant; moduleId
           </div>
 
           {definition.view === 'workflow' ? (
-            <WorkflowBoard definition={definition} records={visible} onEdit={setEditing} onStatus={changeStatus} />
+            <WorkflowBoard
+              definition={definition}
+              records={visible}
+              onEdit={setEditing}
+              onStatus={changeStatus}
+              onOpenJobCard={moduleId === 'job-board'
+                ? (record) => navigate(`/${tenant.verticalId}/tenant/${tenant.id}/erp/job-cards?job=${record.id}`)
+                : undefined}
+            />
           ) : definition.view === 'statement' ? (
             <ProfitLossStatement records={visible} onEdit={setEditing} />
           ) : definition.view === 'directory' ? (
@@ -311,11 +333,13 @@ const WorkflowBoard = ({
   records,
   onEdit,
   onStatus,
+  onOpenJobCard,
 }: {
   definition: AglModuleDefinition;
   records: AglOperationalRecord[];
   onEdit: (record: AglOperationalRecord) => void;
   onStatus: (record: AglOperationalRecord, status: string) => void;
+  onOpenJobCard?: (record: AglOperationalRecord) => void;
 }) => (
   <div className="custom-scrollbar overflow-x-auto pb-3">
     <div className="grid min-w-max gap-3" style={{ gridTemplateColumns: `repeat(${definition.statuses.length}, minmax(220px, 1fr))` }}>
@@ -339,6 +363,11 @@ const WorkflowBoard = ({
                   {nextStatus && (
                     <button onClick={() => onStatus(item, nextStatus)} className="mt-3 flex min-h-9 w-full items-center justify-between rounded-md border border-white/[0.08] px-2 text-[9px] text-gray-400 transition hover:border-vertical-accent/30 hover:text-white">
                       Move to {nextStatus}<ChevronRight size={12} />
+                    </button>
+                  )}
+                  {onOpenJobCard && (
+                    <button onClick={() => onOpenJobCard(item)} className="mt-2 flex min-h-9 w-full items-center justify-between rounded-md border border-vertical-accent/20 bg-vertical-accent-glow px-2 text-[9px] text-vertical-accent transition hover:border-vertical-accent/50">
+                      Open linked Job Card<FileCheck2 size={12} />
                     </button>
                   )}
                 </div>
@@ -599,7 +628,31 @@ const RecordEditor = ({
   );
 };
 
-const EditorField = ({ field, value, onChange }: { field: AglFieldDefinition; value: AglRecordValue; onChange: (value: AglRecordValue) => void }) => (
+const editorSuggestions = (field: AglFieldDefinition): string[] => {
+  const people = aglErpRepository.list('employees');
+  const key = field.key.toLowerCase();
+  if (['owner', 'approver', 'reviewer', 'supervisor', 'mechanic', 'collectedby', 'receivedby'].includes(key)) {
+    return people
+      .filter((person) => person.status === 'Active')
+      .filter((person) => key !== 'mechanic' || String(person.department).toLowerCase() === 'workshop')
+      .map((person) => String(person.name));
+  }
+  if (key === 'customer') return aglErpRepository.list('customers').map((record) => String(record.name));
+  if (key === 'vehicle') return aglErpRepository.list('vehicles').map((record) => `${String(record.registration ?? record.id)} · ${String(record.vehicle ?? record.name)}`);
+  if (key === 'supplier') return aglErpRepository.list('suppliers').filter((record) => record.status === 'Active').map((record) => String(record.name));
+  if (key === 'sku') return aglErpRepository.list('parts').map((record) => String(record.sku));
+  if (key === 'jobid' || key === 'job') return aglErpRepository.list('work-orders').map((record) => record.id);
+  if (key === 'department') return ['Workshop', 'Inventory', 'Sales', 'Finance', 'People & HR', 'Marketing', 'Management', 'Administration'];
+  if (key === 'role') return ['Mechanic', 'Senior Mechanic', 'Workshop Supervisor', 'Service Advisor', 'Inventory Attendant', 'Sales Executive', 'Finance Officer', 'HR Officer', 'Operations Manager'];
+  if (key === 'location' || key === 'bay') return ['Receiving bay', 'Bay 1', 'Bay 2', 'Bay 3', 'Bay 4', 'Bay 5', 'AGL Main Workshop', 'Parts Warehouse', 'Head Office'];
+  if (key === 'service') return ['Diagnostics', 'Preventive maintenance', 'Engine repair', 'Suspension work', 'Electrical repair', 'Air-conditioning service', 'Inspection'];
+  return [];
+};
+
+const EditorField = ({ field, value, onChange }: { field: AglFieldDefinition; value: AglRecordValue; onChange: (value: AglRecordValue) => void }) => {
+  const suggestions = field.type === 'text' ? editorSuggestions(field) : [];
+  const listId = suggestions.length ? `agl-${field.key.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-suggestions` : undefined;
+  return (
   <label className="block">
     <span className="font-mono text-[8px] uppercase tracking-wider text-gray-600">{field.label}{field.required ? ' *' : ''}</span>
     {field.type === 'textarea' ? (
@@ -612,14 +665,17 @@ const EditorField = ({ field, value, onChange }: { field: AglFieldDefinition; va
     ) : (
       <input
         type={field.type}
+        list={listId}
         value={typeof value === 'number' ? value : String(value ?? '')}
         onChange={(event) => onChange(field.type === 'number' ? Number(event.target.value) : event.target.value)}
         placeholder={field.placeholder}
         className="mt-2 h-11 w-full rounded-lg border border-white/[0.08] bg-black/25 px-3 text-xs text-white outline-none placeholder:text-gray-700 focus:border-vertical-accent"
       />
     )}
+    {listId && <datalist id={listId}>{suggestions.map((option) => <option key={option} value={option} />)}</datalist>}
   </label>
-);
+  );
+};
 
 const EmptyRegister = ({ action }: { action: string }) => (
   <div className="col-span-full flex min-h-44 items-center justify-center p-8 text-center">

@@ -97,7 +97,7 @@ const SystemDoor = ({
       onClick={onOpen}
       disabled={disabled}
       whileHover={disabled ? undefined : { y: -3 }}
-      className={`group relative min-h-[360px] overflow-hidden rounded-2xl border p-7 text-left transition focus:outline-none focus:ring-2 focus:ring-white disabled:cursor-default disabled:opacity-50 sm:p-9 ${color}`}
+      className={`group relative flex min-h-[390px] flex-col overflow-hidden rounded-2xl border p-7 text-left transition focus:outline-none focus:ring-2 focus:ring-white disabled:cursor-default disabled:opacity-50 sm:p-9 ${color}`}
     >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-current to-transparent opacity-50" />
       <div className="flex items-start justify-between gap-5">
@@ -106,10 +106,10 @@ const SystemDoor = ({
       </div>
       <div className="mt-12 text-4xl font-display font-semibold tracking-tight text-white">{title}</div>
       <p className="mt-4 max-w-xl text-sm leading-6 text-gray-400">{description}</p>
-      <ul className="mt-7 space-y-2 text-xs text-gray-400">
+      <ul className="mt-7 space-y-2 pb-7 text-xs text-gray-400">
         {bullets.map((bullet) => <li key={bullet} className="flex gap-2"><span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-current" />{bullet}</li>)}
       </ul>
-      <div className="absolute bottom-7 left-7 right-7 flex items-center justify-between border-t border-current/15 pt-5 text-xs font-medium sm:bottom-9 sm:left-9 sm:right-9">
+      <div className="mt-auto flex w-full items-center justify-between border-t border-current/15 pt-5 text-xs font-medium">
         <span>{action}</span><ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
       </div>
     </motion.button>
