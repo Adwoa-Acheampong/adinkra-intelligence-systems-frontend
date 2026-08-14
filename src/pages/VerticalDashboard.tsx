@@ -9,8 +9,12 @@ import { VERTICAL_ERPS } from '../config/erpWorkspaces';
 import { useTenant } from '../context/TenantContext';
 import { getVerticalOverviewInsight } from '../data/erpInsightCatalog';
 import { getTenantsByVertical } from '../data/mockAnalyticsData';
+import { isDomainVertical } from '../data/verticalDomainContracts';
 import { useAnalyticsFilters } from '../hooks/useAnalyticsFilters';
 import type { VerticalId } from '../types';
+import { AutoHubCommandWorkspace } from './autos/AutoHubCommandWorkspace';
+import { EstateCommandWorkspace } from './estate/EstateCommandWorkspace';
+import { VerticalCommandWorkspace } from './vertical/VerticalDomainWorkspace';
 
 export const VerticalDashboard: React.FC<{ verticalId: VerticalId }> = ({ verticalId }) => {
   const { setCurrentVertical } = useTenant();
@@ -24,6 +28,9 @@ export const VerticalDashboard: React.FC<{ verticalId: VerticalId }> = ({ vertic
   }, [verticalId, setCurrentVertical]);
 
   if (!workspace) return null;
+  if (verticalId === 'autos') return <AutoHubCommandWorkspace />;
+  if (verticalId === 'estate') return <EstateCommandWorkspace />;
+  if (isDomainVertical(verticalId)) return <VerticalCommandWorkspace workspace={workspace} />;
 
   const insight = getVerticalOverviewInsight(workspace);
   const tenants = getTenantsByVertical(verticalId);

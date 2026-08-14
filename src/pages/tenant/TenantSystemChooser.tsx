@@ -2,12 +2,27 @@ import type React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, BarChart3, ClipboardCheck, DatabaseZap, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getDomainTenantErpStart } from '../../config/routes';
+import { VERTICAL_DOMAIN_CONTRACTS, isDomainVertical } from '../../data/verticalDomainContracts';
 import type { Tenant } from '../../types';
 
 export const TenantSystemChooser = ({ tenant }: { tenant: Tenant }) => {
   const navigate = useNavigate();
   const basePath = `/${tenant.verticalId}/tenant/${tenant.id}`;
-  const erpAvailable = tenant.id === 'agl' && tenant.verticalId === 'autos';
+  const estateTenant = tenant.verticalId === 'estate';
+  const domainContract = isDomainVertical(tenant.verticalId) ? VERTICAL_DOMAIN_CONTRACTS[tenant.verticalId] : null;
+  const erpAvailable = true;
+  const analyticsDescription = estateTenant
+    ? 'Explains property supply, rentals, land, title readiness, demand, viewings, offers, deposits, maintenance, finance, and workforce performance.'
+    : domainContract
+      ? `Explains ${domainContract.assets}, customers, people, money, controls, and the evidence behind every ${domainContract.outcome}.`
+      : 'Explains operating performance, constraints, comparisons, evidence, and governed insights.';
+  const erpDescription = estateTenant
+    ? 'Runs the estate company: properties, listings, owners, title files, viewings, inspections, offers, agreements, deposits, leases, rent, maintenance, people, finance, reports, and audit.'
+    : domainContract
+      ? `Runs the company through controlled ${domainContract.assets}, workflow, customer, workforce, finance, trust, and audit records.`
+      : 'Runs the company through operational ledgers, workflows, approvals, documents, people, and audit records.';
+  const erpStart = estateTenant ? 'property-register' : tenant.id === 'agl' && tenant.verticalId === 'autos' ? 'work-orders' : getDomainTenantErpStart(tenant.verticalId);
 
   return (
     <div className="min-h-screen bg-[#050505] px-5 py-8 text-white sm:px-8 lg:px-12">
@@ -32,8 +47,8 @@ export const TenantSystemChooser = ({ tenant }: { tenant: Tenant }) => {
           <SystemDoor
             eyebrow="Explain and investigate"
             title="Analytics"
-            description="Preserves the current AGL analytical system: visual comparisons, diagnostic performance, departmental measures, evidence drills, and governed insights."
-            bullets={['Explore and compare performance', 'Drill from metrics to contributing evidence', 'Keep the current analytical build intact']}
+            description={analyticsDescription}
+            bullets={estateTenant ? ['Compare property and portfolio performance', 'Drill from Estate measures to source evidence', 'Keep analytical decisions separate from record mutation'] : domainContract ? [`Compare ${domainContract.measures.join(', ')}`, 'Filter every page by period, place, actor, state, and domain facet', 'Drill from a result to its contributing operating record'] : ['Explore and compare performance', 'Drill from metrics to contributing evidence', 'Keep analytical decisions separate from record mutation']}
             icon={<BarChart3 size={26} />}
             accent="cyan"
             onOpen={() => navigate(`${basePath}/analytics`)}
@@ -42,11 +57,11 @@ export const TenantSystemChooser = ({ tenant }: { tenant: Tenant }) => {
           <SystemDoor
             eyebrow="Create and control records"
             title="ERP"
-            description="Runs the company: customers, vehicles, jobs, stock, sales, finance, people, documents, approvals, and the audited actions that change them."
-            bullets={['Work directly in operational ledgers', 'Create, edit, approve, progress, and close records', 'Record every mutation in the Admin Audit Log']}
+            description={erpDescription}
+            bullets={estateTenant ? ['Create and progress property operating records', 'Control title, transaction, rental, and maintenance workflows', 'Retain every mutation in the Estate audit trail'] : domainContract ? [`Create and progress ${domainContract.asset} records`, domainContract.commandDecision, 'Retain actor, time, location, status, and mutation evidence'] : ['Work directly in operational ledgers', 'Create, edit, approve, progress, and close records', 'Record every mutation in the Admin Audit Log']}
             icon={<ClipboardCheck size={26} />}
             accent="red"
-            onOpen={() => erpAvailable && navigate(`${basePath}/erp/work-orders`)}
+            onOpen={() => erpAvailable && navigate(`${basePath}/erp/${erpStart}`)}
             action={erpAvailable ? 'Open ERP' : 'ERP pattern follows AGL'}
             disabled={!erpAvailable}
           />

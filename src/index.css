@@ -72,6 +72,23 @@ code, pre {
   font-family: var(--font-mono);
 }
 
+.field {
+  min-height: 2.75rem;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  background: #090909;
+  padding: 0.65rem 0.75rem;
+  color: #e5e7eb;
+  font-size: 0.75rem;
+  outline: none;
+}
+
+.field:focus {
+  border-color: rgba(52, 211, 153, 0.48);
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.08);
+}
+
 .evidence-ledger {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),

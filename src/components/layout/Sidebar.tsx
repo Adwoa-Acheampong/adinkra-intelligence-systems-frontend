@@ -14,7 +14,13 @@ import {
 } from 'lucide-react';
 import { useTenant } from '../../context/TenantContext';
 import type { Tenant, VerticalId } from '../../types';
-import { getAglErpModuleSections, getTenantModules } from '../../config/routes';
+import {
+  getAglErpModuleSections,
+  getDomainTenantModuleSections,
+  getEstateAnalyticsModuleSections,
+  getEstateErpModuleSections,
+  getTenantModules,
+} from '../../config/routes';
 import {
   ERP_SWITCHER,
   getModuleHref,
@@ -78,13 +84,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ tenant, tenantMode = 'analytic
     if (tenant) {
       const tenantBasePath = `/${tenant.verticalId}/tenant/${tenant.id}`;
       const basePath = `${tenantBasePath}/${tenantMode}`;
-      const tenantSections = tenantMode === 'erp' && tenant.id === 'agl'
-        ? getAglErpModuleSections().map((section) => ({
+      const sectionDefinitions = tenantMode === 'erp' && tenant.id === 'agl'
+        ? getAglErpModuleSections()
+        : tenant.verticalId === 'estate' && tenantMode === 'erp'
+          ? getEstateErpModuleSections()
+          : tenant.verticalId === 'estate'
+            ? getEstateAnalyticsModuleSections()
+            : getDomainTenantModuleSections(tenant.verticalId, tenantMode);
+      const tenantSections = sectionDefinitions
+        ? sectionDefinitions.map((section) => ({
             label: section.label,
             items: section.modules.map((item) => ({
-              id: item.path,
+              id: item.path || 'overview',
               label: item.name,
-              href: `${basePath}/${item.path}`,
+              href: item.path ? `${basePath}/${item.path}` : basePath,
               icon: item.icon,
             })),
           }))
@@ -162,7 +175,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ tenant, tenantMode = 'analytic
     const activeSection = context.sections.find((section) => section.items.some((item) => isActive(item.href)));
     if (!activeSection) return;
     setOpenSections((current) => (
-      current[activeSection.label] ? current : { ...current, [activeSection.label]: true }
+      Object.prototype.hasOwnProperty.call(current, activeSection.label)
+        ? current
+        : { ...current, [activeSection.label]: true }
     ));
   }, [location.pathname, context.sections]);
 

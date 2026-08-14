@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -11,9 +11,11 @@ import {
   Clock3,
   Code2,
   Layers3,
+  Filter,
   Monitor,
   MousePointerClick,
   Route as RouteIcon,
+  RotateCcw,
   ShieldCheck,
   Smartphone,
   Users,
@@ -36,6 +38,68 @@ import {
 
 const compact = new Intl.NumberFormat('en-GH', { notation: 'compact', maximumFractionDigits: 1 });
 const whole = new Intl.NumberFormat('en-GH');
+
+type ProductPeriod = 'today' | '7d' | '30d' | 'ytd';
+type ProductHealth = 'All health' | 'Healthy' | 'Watch' | 'Critical';
+
+interface ProductFilterState {
+  period: ProductPeriod;
+  market: string;
+  platform: string;
+  health: ProductHealth;
+  vertical: string;
+  owner: string;
+}
+
+const productDefaults: ProductFilterState = { period: '7d', market: 'Global', platform: 'All platforms', health: 'All health', vertical: 'All verticals', owner: 'All owners' };
+const periodMultiplier: Record<ProductPeriod, number> = { today: 0.18, '7d': 1, '30d': 3.86, ytd: 28.4 };
+const marketMultiplier: Record<string, number> = { Global: 1, Ghana: 0.58, Nigeria: 0.24, Kenya: 0.07, Rwanda: 0.04, 'South Africa': 0.07 };
+
+const useProductFilters = (namespace: string) => {
+  const [params, setParams] = useSearchParams();
+  const filters: ProductFilterState = {
+    period: (params.get(`${namespace}.period`) as ProductPeriod) || productDefaults.period,
+    market: params.get(`${namespace}.market`) || productDefaults.market,
+    platform: params.get(`${namespace}.platform`) || productDefaults.platform,
+    health: (params.get(`${namespace}.health`) as ProductHealth) || productDefaults.health,
+    vertical: params.get(`${namespace}.vertical`) || productDefaults.vertical,
+    owner: params.get(`${namespace}.owner`) || productDefaults.owner,
+  };
+  const update = (patch: Partial<ProductFilterState>) => {
+    const next = new URLSearchParams(params);
+    Object.entries(patch).forEach(([key, value]) => {
+      if (value === productDefaults[key as keyof ProductFilterState]) next.delete(`${namespace}.${key}`);
+      else next.set(`${namespace}.${key}`, String(value));
+    });
+    setParams(next, { replace: true });
+  };
+  const reset = () => {
+    const next = new URLSearchParams(params);
+    Object.keys(productDefaults).forEach((key) => next.delete(`${namespace}.${key}`));
+    setParams(next, { replace: true });
+  };
+  return { filters, update, reset };
+};
+
+const ProductFilterBar = ({ filters, update, reset, verticals, owners, platforms }: { filters: ProductFilterState; update: (patch: Partial<ProductFilterState>) => void; reset: () => void; verticals: string[]; owners: string[]; platforms: string[] }) => (
+  <section aria-label="Digital product custom filters" className="rounded-xl border border-white/[0.08] bg-black/25 p-3">
+    <div className="flex flex-wrap items-end gap-2">
+      <div className="mr-2 self-center font-mono text-[8px] uppercase tracking-[0.18em] text-blue-300"><Filter size={12} className="mr-2 inline" />Filter this product decision</div>
+      <div className="flex rounded-lg border border-white/[0.07] p-1">{(['today', '7d', '30d', 'ytd'] as ProductPeriod[]).map((period) => <button type="button" key={period} onClick={() => update({ period })} className={`min-h-8 rounded-md px-3 font-mono text-[8px] uppercase ${filters.period === period ? 'bg-blue-300 text-black' : 'text-gray-500'}`}>{period === 'today' ? 'Today' : period.toUpperCase()}</button>)}</div>
+      {[
+        ['Market', filters.market, ['Global', 'Ghana', 'Nigeria', 'Kenya', 'Rwanda', 'South Africa'], (value: string) => update({ market: value })],
+        ['Platform', filters.platform, platforms, (value: string) => update({ platform: value })],
+        ['Health', filters.health, ['All health', 'Healthy', 'Watch', 'Critical'], (value: string) => update({ health: value as ProductHealth })],
+        ['Vertical', filters.vertical, ['All verticals', ...verticals], (value: string) => update({ vertical: value })],
+        ['Owner', filters.owner, ['All owners', ...owners], (value: string) => update({ owner: value })],
+      ].map(([label, value, options, onChange]) => <label key={String(label)} className="min-w-[130px] flex-1"><span className="mb-1.5 block font-mono text-[7px] uppercase tracking-wider text-gray-600">{String(label)}</span><select value={String(value)} onChange={(event) => (onChange as (value: string) => void)(event.target.value)} className="h-10 w-full rounded-lg border border-white/[0.08] bg-[#090909] px-3 text-[9px] text-gray-300">{(options as string[]).map((option) => <option key={option}>{option}</option>)}</select></label>)}
+      <button type="button" onClick={reset} className="flex min-h-10 items-center gap-2 rounded-lg border border-white/[0.08] px-3 font-mono text-[8px] uppercase text-gray-500 hover:text-white"><RotateCcw size={11} /> Reset</button>
+    </div>
+  </section>
+);
+
+const routeHealth = (errorRate: number): ProductHealth => errorRate > 0.3 ? 'Critical' : errorRate >= 0.15 ? 'Watch' : 'Healthy';
+const appHealth = (crashFree: number): ProductHealth => crashFree < 99.7 ? 'Critical' : crashFree < 99.85 ? 'Watch' : 'Healthy';
 
 export const WebsitesApps: React.FC = () => {
   const { setCurrentVertical } = useTenant();
@@ -88,8 +152,26 @@ const MetricCard: React.FC<{ label: string; value: React.ReactNode; detail: stri
 );
 
 const PlatformPortfolio: React.FC = () => {
-  const webSessions = WEBSITE_ROUTES.reduce((sum, route) => sum + route.sessions, 0);
-  const appMau = NATIVE_APPS.reduce((sum, app) => sum + app.mau, 0);
+  const { filters, update, reset } = useProductFilters('digital.portfolio');
+  const volumeFactor = periodMultiplier[filters.period] * marketMultiplier[filters.market];
+  const visibleRoutes = WEBSITE_ROUTES.filter((route) => (filters.health === 'All health' || routeHealth(route.errorRate) === filters.health) && (filters.vertical === 'All verticals' || route.vertical === filters.vertical) && (filters.owner === 'All owners' || route.owner === filters.owner));
+  const appVertical: Record<string, string> = {
+    'blkk-autos': 'Autos',
+    merchants: 'Merchants',
+    farmers: 'Farmers',
+    estate: 'Estate',
+    'label-admin': 'BLKK Label',
+  };
+  const visibleApps = NATIVE_APPS.filter((app) =>
+    (filters.health === 'All health' || appHealth(app.crashFree) === filters.health)
+    && (filters.vertical === 'All verticals' || appVertical[app.id] === filters.vertical)
+  );
+  const showWebsite = ['All platforms', 'Responsive web'].includes(filters.platform);
+  const showApps = filters.platform !== 'Responsive web';
+  const platformFactor = filters.platform === 'Android' ? 0.73 : filters.platform === 'iOS' ? 0.27 : 1;
+  const webSessions = visibleRoutes.reduce((sum, route) => sum + route.sessions, 0) * volumeFactor;
+  const appMau = visibleApps.reduce((sum, app) => sum + app.mau, 0) * volumeFactor * platformFactor;
+  const criticalSignals = visibleRoutes.filter((route) => routeHealth(route.errorRate) !== 'Healthy').length + visibleApps.filter((app) => appHealth(app.crashFree) !== 'Healthy').length;
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-7xl space-y-8">
@@ -99,14 +181,16 @@ const PlatformPortfolio: React.FC = () => {
         description="One portfolio index for every customer-facing property. Open the BLKK Star Hub website or any native app to inspect routes, screens, workflows, events, errors, releases and conversion loss."
       />
 
+      <ProductFilterBar filters={filters} update={update} reset={reset} verticals={[...new Set(WEBSITE_ROUTES.map((route) => route.vertical))]} owners={[...new Set(WEBSITE_ROUTES.map((route) => route.owner))]} platforms={['All platforms', 'Responsive web', 'Android', 'iOS']} />
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Tracked properties" value="6" detail="1 website · 5 native apps" icon={Layers3} />
-        <MetricCard label="Website route sessions" value={compact.format(webSessions)} detail={`${WEBSITE_ROUTES.length} instrumented routes`} icon={Monitor} />
-        <MetricCard label="Native app MAU" value={compact.format(appMau)} detail="across five apps" icon={Users} />
-        <MetricCard label="Critical signals" value="7" detail="payment, sync and performance" icon={AlertTriangle} />
+        <MetricCard label="Tracked properties" value={(showWebsite ? 1 : 0) + (showApps ? visibleApps.length : 0)} detail={`${showWebsite ? '1 website' : 'website excluded'} · ${showApps ? `${visibleApps.length} native apps` : 'apps excluded'}`} icon={Layers3} />
+        <MetricCard label={`Website sessions · ${filters.period.toUpperCase()}`} value={showWebsite ? compact.format(webSessions) : 'Excluded'} detail={`${visibleRoutes.length} routes match the exact filters`} icon={Monitor} />
+        <MetricCard label={`Native app users · ${filters.period.toUpperCase()}`} value={showApps ? compact.format(appMau) : 'Excluded'} detail={`${filters.market} · ${filters.platform}`} icon={Users} />
+        <MetricCard label="Signals in scope" value={criticalSignals} detail={`${filters.health} · ${filters.owner}`} icon={AlertTriangle} />
       </div>
 
-      <section>
+      {showWebsite && <section>
         <div className="mb-4">
           <div className="text-xs font-mono uppercase tracking-[0.2em] text-gray-400">Website portfolio</div>
           <p className="mt-1 text-xs text-gray-600">Web properties are first-class portfolio assets, not hidden inside a central aggregate.</p>
@@ -138,15 +222,15 @@ const PlatformPortfolio: React.FC = () => {
             </div>
           </div>
         </Link>
-      </section>
+      </section>}
 
-      <section>
+      {showApps && <section>
         <div className="mb-4">
           <div className="text-xs font-mono uppercase tracking-[0.2em] text-gray-400">Native app portfolio</div>
           <p className="mt-1 text-xs text-gray-600">Each card opens a product-specific micro dashboard; none terminate at this portfolio layer.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {NATIVE_APPS.map((app) => (
+          {visibleApps.map((app) => (
             <Link
               key={app.id}
               to={`/apps-website/apps/${app.id}`}
@@ -160,13 +244,13 @@ const PlatformPortfolio: React.FC = () => {
               <h3 className="mt-4 text-sm font-medium text-white">{app.name}</h3>
               <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-gray-500">{app.purpose}</p>
               <div className="mt-auto grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4">
-                <div><div className="text-base text-white">{compact.format(app.mau)}</div><div className="text-[9px] font-mono uppercase text-gray-600">MAU</div></div>
+                <div><div className="text-base text-white">{compact.format(app.mau * volumeFactor * platformFactor)}</div><div className="text-[9px] font-mono uppercase text-gray-600">Users in scope</div></div>
                 <div><div className="text-base text-white">{app.crashFree}%</div><div className="text-[9px] font-mono uppercase text-gray-600">Crash free</div></div>
               </div>
             </Link>
           ))}
         </div>
-      </section>
+      </section>}
 
       <div className="rounded-xl border border-blue-400/20 bg-blue-400/[0.06] p-4 text-xs leading-relaxed text-gray-300">
         <span className="font-medium text-blue-200">Transaction control:</span> every conversion represented here is BLKK-mediated. The website and apps route users through BLKK advisors, BLKK orders, platform payment/escrow and BLKK fulfilment—never direct buyer-to-seller checkout or messaging.
@@ -177,11 +261,14 @@ const PlatformPortfolio: React.FC = () => {
 
 const WebsiteDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [vertical, setVertical] = useState('All');
-  const verticals = ['All', ...Array.from(new Set(WEBSITE_ROUTES.map((item) => item.vertical)))];
-  const routes = vertical === 'All' ? WEBSITE_ROUTES : WEBSITE_ROUTES.filter((route) => route.vertical === vertical);
-  const sessions = routes.reduce((sum, route) => sum + route.sessions, 0);
-  const weightedConversion = routes.reduce((sum, route) => sum + route.sessions * route.conversion, 0) / Math.max(sessions, 1);
+  const { filters, update, reset } = useProductFilters('digital.website');
+  const verticals = Array.from(new Set(WEBSITE_ROUTES.map((item) => item.vertical)));
+  const owners = Array.from(new Set(WEBSITE_ROUTES.map((item) => item.owner)));
+  const routes = WEBSITE_ROUTES.filter((route) => (filters.vertical === 'All verticals' || route.vertical === filters.vertical) && (filters.owner === 'All owners' || route.owner === filters.owner) && (filters.health === 'All health' || routeHealth(route.errorRate) === filters.health));
+  const volumeFactor = periodMultiplier[filters.period] * marketMultiplier[filters.market] * (filters.platform === 'Mobile web' ? 0.72 : filters.platform === 'Desktop web' ? 0.28 : 1);
+  const routeSessions = routes.reduce((sum, route) => sum + route.sessions, 0);
+  const sessions = routeSessions * volumeFactor;
+  const weightedConversion = routes.reduce((sum, route) => sum + route.sessions * route.conversion, 0) / Math.max(routeSessions, 1);
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-7xl space-y-7">
@@ -193,18 +280,20 @@ const WebsiteDashboard: React.FC = () => {
         backLabel="All websites & apps"
       />
 
+      <ProductFilterBar filters={filters} update={update} reset={reset} verticals={verticals} owners={owners} platforms={['All platforms', 'Mobile web', 'Desktop web']} />
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <MetricCard label="Sessions · 7D" value={compact.format(sessions)} detail={`${routes.length} routes in scope`} icon={Users} />
+        <MetricCard label={`Sessions · ${filters.period.toUpperCase()}`} value={compact.format(sessions)} detail={`${routes.length} routes · ${filters.market} · ${filters.platform}`} icon={Users} />
         <MetricCard label="Weighted conversion" value={`${weightedConversion.toFixed(1)}%`} detail="BLKK action / session" icon={MousePointerClick} />
-        <MetricCard label="Order payments" value="7,142" detail="authorised by platform" icon={ShieldCheck} />
-        <MetricCard label="Median LCP" value="1.31s" detail="p75 · all routes" icon={Zap} />
-        <MetricCard label="JS error rate" value="0.17%" detail="22 sessions affected" icon={Code2} />
-        <MetricCard label="Zero-result search" value="8.4%" detail="unified search" icon={AlertTriangle} />
+        <MetricCard label="Order payments" value={compact.format(7142 * volumeFactor)} detail="authorised by platform inside this scope" icon={ShieldCheck} />
+        <MetricCard label="Weighted LCP" value={`${(routes.reduce((sum, route) => sum + route.lcp * route.sessions, 0) / Math.max(routeSessions, 1)).toFixed(2)}s`} detail="session-weighted route p75" icon={Zap} />
+        <MetricCard label="Affected sessions" value={compact.format(routes.reduce((sum, route) => sum + route.sessions * route.errorRate / 100, 0) * volumeFactor)} detail={`${filters.health} runtime scope`} icon={Code2} />
+        <MetricCard label="Zero-result searches" value={compact.format(routes.reduce((sum, route) => sum + route.sessions * route.zeroResult / 100, 0) * volumeFactor)} detail="failed discovery sessions in scope" icon={AlertTriangle} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
         <GlassPanel className="rounded-xl p-5">
-          <div className="mb-4 flex items-center justify-between"><div><h2 className="text-sm font-medium text-white">BLKK-mediated conversion funnel</h2><p className="mt-1 text-xs text-gray-500">Discovery through platform fulfilment</p></div><span className="text-[10px] font-mono text-blue-300">7D COHORT</span></div>
+          <div className="mb-4 flex items-center justify-between"><div><h2 className="text-sm font-medium text-white">BLKK-mediated conversion funnel</h2><p className="mt-1 text-xs text-gray-500">Discovery through platform fulfilment</p></div><span className="text-[10px] font-mono text-blue-300">{filters.period.toUpperCase()} COHORT</span></div>
           <div className="space-y-3">
             {WEBSITE_FUNNEL.map((step, index) => {
               const width = (step.users / WEBSITE_FUNNEL[0].users) * 100;
@@ -212,7 +301,7 @@ const WebsiteDashboard: React.FC = () => {
                 <div key={step.step} className="grid grid-cols-[22px_1fr_auto] items-center gap-3">
                   <div className="font-mono text-[10px] text-gray-600">0{index + 1}</div>
                   <div><div className="mb-1.5 flex justify-between text-xs"><span className="text-gray-300">{step.step}</span><span className="text-gray-500">{width.toFixed(1)}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-blue-400" style={{ width: `${width}%`, opacity: 1 - index * 0.08 }} /></div></div>
-                  <div className="w-16 text-right font-mono text-xs text-white">{compact.format(step.users)}</div>
+                  <div className="w-16 text-right font-mono text-xs text-white">{compact.format(step.users * volumeFactor)}</div>
                 </div>
               );
             })}
@@ -243,7 +332,7 @@ const WebsiteDashboard: React.FC = () => {
         <div className="flex flex-col gap-4 border-b border-white/10 px-5 py-4 md:flex-row md:items-end md:justify-between">
           <div><h2 className="text-sm font-medium text-white">Instrumented routes</h2><p className="mt-1 text-xs text-gray-500">Click a route for its micro dashboard and raw event anatomy.</p></div>
           <div className="flex max-w-full gap-2 overflow-x-auto pb-1">
-            {verticals.map((item) => <button key={item} onClick={() => setVertical(item)} className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] transition ${vertical === item ? 'border-blue-400/40 bg-blue-400/10 text-blue-200' : 'border-white/10 text-gray-500 hover:text-white'}`}>{item}</button>)}
+            {['All verticals', ...verticals].map((item) => <button key={item} onClick={() => update({ vertical: item })} className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] transition ${filters.vertical === item ? 'border-blue-400/40 bg-blue-400/10 text-blue-200' : 'border-white/10 text-gray-500 hover:text-white'}`}>{item}</button>)}
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -254,7 +343,7 @@ const WebsiteDashboard: React.FC = () => {
                 <tr key={route.id} onClick={() => navigate(`/apps-website/website/blkk-star-hub/routes/${route.id}`)} className="cursor-pointer hover:bg-blue-400/[0.035]">
                   <td className="px-4 py-3"><div className="font-medium text-white">{route.surface}</div><div className="mt-1 font-mono text-[10px] text-blue-300">{route.route}</div></td>
                   <td className="px-4 py-3 text-gray-400">{route.vertical}</td>
-                  <td className="px-4 py-3 font-mono text-gray-300">{whole.format(route.sessions)}</td>
+                  <td className="px-4 py-3 font-mono text-gray-300">{whole.format(route.sessions * volumeFactor)}</td>
                   <td className="px-4 py-3 text-emerald-300">{route.conversion}%</td>
                   <td className="px-4 py-3 text-gray-400">{route.exit}%</td>
                   <td className={`px-4 py-3 ${route.lcp > 1.5 ? 'text-amber-300' : 'text-gray-300'}`}>{route.lcp}s</td>
@@ -274,16 +363,19 @@ const WebsiteDashboard: React.FC = () => {
 
 const WebsiteRouteDetail: React.FC = () => {
   const { routeId = '' } = useParams();
+  const { filters, update, reset } = useProductFilters(`digital.route.${routeId}`);
   const route = getWebsiteRoute(routeId);
   if (!route) return <Navigate to="/apps-website/website/blkk-star-hub" replace />;
 
-  const completedIntents = Math.round(route.sessions * route.conversion / 100);
-  const startedIntents = Math.round(Math.min(route.sessions * 0.92, completedIntents * 1.35));
+  const volumeFactor = periodMultiplier[filters.period] * marketMultiplier[filters.market] * (filters.platform === 'Mobile web' ? 0.72 : filters.platform === 'Desktop web' ? 0.28 : 1);
+  const scopedSessions = Math.round(route.sessions * volumeFactor);
+  const completedIntents = Math.round(scopedSessions * route.conversion / 100);
+  const startedIntents = Math.round(Math.min(scopedSessions * 0.92, completedIntents * 1.35));
   const eventRows = [
-    ['page_view', route.sessions, '100%', '0.02%', 'browser'],
-    ['content_impression', Math.round(route.sessions * 0.86), '86.0%', '0.04%', 'catalogue'],
-    ['verified_asset_open', Math.round(route.sessions * 0.58), '67.4%', '0.06%', 'ontology'],
-    ['blkk_intent_started', startedIntents, `${(startedIntents / route.sessions * 100).toFixed(1)}%`, '0.12%', 'crm'],
+    ['page_view', scopedSessions, '100%', '0.02%', 'browser'],
+    ['content_impression', Math.round(scopedSessions * 0.86), '86.0%', '0.04%', 'catalogue'],
+    ['verified_asset_open', Math.round(scopedSessions * 0.58), '67.4%', '0.06%', 'ontology'],
+    ['blkk_intent_started', startedIntents, `${(startedIntents / Math.max(scopedSessions, 1) * 100).toFixed(1)}%`, '0.12%', 'crm'],
     ['blkk_intent_completed', completedIntents, `${route.conversion}%`, `${route.errorRate}%`, 'orders'],
   ];
 
@@ -297,8 +389,10 @@ const WebsiteRouteDetail: React.FC = () => {
         backLabel="BLKK Star Hub routes"
       />
 
+      <ProductFilterBar filters={filters} update={update} reset={reset} verticals={[route.vertical]} owners={[route.owner]} platforms={['All platforms', 'Mobile web', 'Desktop web']} />
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <MetricCard label="Sessions" value={whole.format(route.sessions)} detail="7-day route traffic" icon={Users} />
+        <MetricCard label="Sessions" value={whole.format(scopedSessions)} detail={`${filters.period.toUpperCase()} · ${filters.market} · ${filters.platform}`} icon={Users} />
         <MetricCard label="BLKK conversion" value={`${route.conversion}%`} detail="completed mediated intent" icon={MousePointerClick} />
         <MetricCard label="Exit rate" value={`${route.exit}%`} detail="route exits" icon={RouteIcon} />
         <MetricCard label="LCP p75" value={`${route.lcp}s`} detail={route.lcp < 1.5 ? 'within target' : 'needs attention'} icon={Zap} />
@@ -348,11 +442,14 @@ const WebsiteRouteDetail: React.FC = () => {
 
 const NativeAppDashboard: React.FC = () => {
   const { appId = '' } = useParams();
+  const { filters, update, reset } = useProductFilters(`digital.app.${appId}`);
   const app = getNativeApp(appId);
   const [selected, setSelected] = useState<AppScreenMetric | null>(null);
   if (!app) return <Navigate to="/apps-website" replace />;
 
-  const chartData = app.screens.map((screen) => ({ name: screen.screen.split(' ')[0], views: screen.views, errors: Math.round(screen.views * screen.errorRate / 100) }));
+  const volumeFactor = periodMultiplier[filters.period] * marketMultiplier[filters.market] * (filters.platform === 'Android' ? 0.73 : filters.platform === 'iOS' ? 0.27 : 1);
+  const visibleScreens = app.screens.filter((screen) => (filters.health === 'All health' || routeHealth(screen.errorRate) === filters.health) && (filters.owner === 'All owners' || screen.workflow === filters.owner));
+  const chartData = visibleScreens.map((screen) => ({ name: screen.screen.split(' ')[0], views: Math.round(screen.views * volumeFactor), errors: Math.round(screen.views * volumeFactor * screen.errorRate / 100) }));
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-7xl space-y-7" style={{ ['--product-accent' as string]: app.accent }}>
@@ -364,13 +461,15 @@ const NativeAppDashboard: React.FC = () => {
         backLabel="All websites & apps"
       />
 
+      <ProductFilterBar filters={filters} update={update} reset={reset} verticals={[app.shortName]} owners={[...new Set(app.screens.map((screen) => screen.workflow))]} platforms={['All platforms', 'Android', 'iOS']} />
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <MetricCard label="Monthly active" value={compact.format(app.mau)} detail={`${compact.format(app.dau)} daily active`} icon={Users} />
+        <MetricCard label={`Active users · ${filters.period.toUpperCase()}`} value={compact.format(app.mau * volumeFactor)} detail={`${filters.market} · ${filters.platform}`} icon={Users} />
         <MetricCard label="Crash-free" value={`${app.crashFree}%`} detail="session-weighted" icon={ShieldCheck} />
         <MetricCard label="API p95" value={`${app.apiMs}ms`} detail="app request latency" icon={Clock3} />
-        <MetricCard label="Offline backlog" value={whole.format(app.syncBacklog)} detail="payloads awaiting sync" icon={WifiOff} />
+        <MetricCard label="Offline backlog" value={whole.format(app.syncBacklog * (filters.platform === 'iOS' ? 0.27 : filters.platform === 'Android' ? 0.73 : 1))} detail="payloads awaiting sync on selected devices" icon={WifiOff} />
         <MetricCard label="Current release" value={`v${app.version}`} detail={`${app.releaseAdoption}% adoption`} icon={Code2} />
-        <MetricCard label="Screens traced" value={app.screens.length} detail="tap a row to inspect" icon={Smartphone} />
+        <MetricCard label="Screens in scope" value={visibleScreens.length} detail={`${filters.health} · tap a row to inspect`} icon={Smartphone} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
@@ -395,7 +494,7 @@ const NativeAppDashboard: React.FC = () => {
           <div className="space-y-4">
             {app.funnel.map((step, index) => {
               const pct = (step.users / app.funnel[0].users) * 100;
-              return <div key={step.step}><div className="mb-1.5 flex justify-between text-xs"><span className="text-gray-300">{index + 1}. {step.step}</span><span className="font-mono text-gray-500">{whole.format(step.users)} · {pct.toFixed(1)}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: app.accent, opacity: 1 - index * 0.1 }} /></div></div>;
+              return <div key={step.step}><div className="mb-1.5 flex justify-between text-xs"><span className="text-gray-300">{index + 1}. {step.step}</span><span className="font-mono text-gray-500">{whole.format(step.users * volumeFactor)} · {pct.toFixed(1)}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: app.accent, opacity: 1 - index * 0.1 }} /></div></div>;
             })}
           </div>
         </GlassPanel>
@@ -407,11 +506,11 @@ const NativeAppDashboard: React.FC = () => {
           <table className="w-full min-w-[900px] text-left">
             <thead className="bg-black/20 text-[10px] font-mono uppercase tracking-wider text-gray-500"><tr>{['Screen', 'Workflow', 'Views', 'Completion', 'Median load', 'Error rate', 'Offline pending', ''].map((head) => <th key={head} className="px-5 py-3 font-normal">{head}</th>)}</tr></thead>
             <tbody className="divide-y divide-white/[0.06] text-xs">
-              {app.screens.map((screen) => (
+              {visibleScreens.map((screen) => (
                 <tr key={screen.id} onClick={() => setSelected(screen)} className="cursor-pointer hover:bg-white/[0.035]">
                   <td className="px-5 py-3 font-medium text-white">{screen.screen}<div className="mt-1 font-mono text-[10px]" style={{ color: app.accent }}>{screen.id}</div></td>
                   <td className="px-5 py-3 text-gray-400">{screen.workflow}</td>
-                  <td className="px-5 py-3 font-mono text-gray-300">{whole.format(screen.views)}</td>
+                  <td className="px-5 py-3 font-mono text-gray-300">{whole.format(screen.views * volumeFactor)}</td>
                   <td className="px-5 py-3 text-emerald-300">{screen.completion}%</td>
                   <td className={`px-5 py-3 ${screen.medianMs > 1000 ? 'text-amber-300' : 'text-gray-300'}`}>{screen.medianMs}ms</td>
                   <td className={`px-5 py-3 ${screen.errorRate > 0.25 ? 'text-red-300' : 'text-gray-400'}`}>{screen.errorRate}%</td>

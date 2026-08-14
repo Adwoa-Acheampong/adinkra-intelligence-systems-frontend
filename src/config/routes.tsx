@@ -1,5 +1,6 @@
 import React from 'react';
 import { VerticalId } from '../types';
+import { VERTICAL_ERPS } from './erpWorkspaces';
 import {
   Activity,
   Archive,
@@ -59,6 +60,32 @@ export interface ModuleSection {
   label: string;
   modules: ModuleRoute[];
 }
+
+export const getDomainTenantModuleSections = (verticalId: VerticalId, mode: 'analytics' | 'erp'): ModuleSection[] => {
+  const workspace = VERTICAL_ERPS[verticalId];
+  if (!workspace) return [];
+  const sections = workspace.sections.map((section) => ({
+    label: mode === 'erp' ? section.label : `${section.label} intelligence`,
+    modules: section.modules
+      .filter((item) => item.id !== 'tenants' && (mode === 'analytics' || item.id !== ''))
+      .map((item) => ({
+        name: item.id === '' ? 'Analytics dashboard' : item.label,
+        path: item.id,
+        icon: React.createElement(item.icon, { size: 18 }),
+      })),
+  })).filter((section) => section.modules.length > 0);
+
+  if (mode === 'analytics') return sections;
+  return sections.map((section, sectionIndex) => ({
+    ...section,
+    label: sectionIndex === sections.length - 1 ? 'Enterprise records' : section.label,
+  }));
+};
+
+export const getDomainTenantErpStart = (verticalId: VerticalId) => {
+  const first = getDomainTenantModuleSections(verticalId, 'erp').flatMap((section) => section.modules)[0];
+  return first?.path || 'operations';
+};
 
 export const getTenantModules = (verticalId: VerticalId, _tenantType: string): ModuleRoute[] => {
   const baseModules: ModuleRoute[] = [
@@ -144,6 +171,76 @@ export const getTenantModules = (verticalId: VerticalId, _tenantType: string): M
 
   return [...baseModules, ...verticalModules, ...commonModules];
 };
+
+export const getEstateErpModuleSections = (): ModuleSection[] => [
+  {
+    label: 'Property control',
+    modules: [
+      { name: 'Property register', path: 'property-register', icon: <Building2 size={18} /> },
+      { name: 'Listings', path: 'listings', icon: <HomeIcon size={18} /> },
+      { name: 'Land parcels', path: 'land-parcels', icon: <MapPin size={18} /> },
+      { name: 'Owners & mandates', path: 'owners-mandates', icon: <ClipboardSignature size={18} /> },
+      { name: 'Title files', path: 'title-files', icon: <ShieldCheck size={18} /> },
+    ],
+  },
+  {
+    label: 'Demand & transactions',
+    modules: [
+      { name: 'Enquiries', path: 'enquiries', icon: <ContactRound size={18} /> },
+      { name: 'Viewings', path: 'viewings', icon: <CalendarClock size={18} /> },
+      { name: 'Inspections', path: 'inspections', icon: <ClipboardCheck size={18} /> },
+      { name: 'Offers', path: 'offers', icon: <BadgeDollarSign size={18} /> },
+      { name: 'Agreements', path: 'agreements', icon: <FileText size={18} /> },
+      { name: 'Deposits & escrow', path: 'deposits', icon: <WalletCards size={18} /> },
+      { name: 'Handovers', path: 'handovers', icon: <PackageCheck size={18} /> },
+    ],
+  },
+  {
+    label: 'Rentals & facilities',
+    modules: [
+      { name: 'Leases', path: 'leases', icon: <FileClock size={18} /> },
+      { name: 'Rent ledger', path: 'rent-ledger', icon: <ReceiptText size={18} /> },
+      { name: 'Maintenance cases', path: 'maintenance', icon: <Wrench size={18} /> },
+      { name: 'Vendors', path: 'vendors', icon: <Briefcase size={18} /> },
+    ],
+  },
+  {
+    label: 'Enterprise control',
+    modules: [
+      { name: 'Workforce', path: 'workforce', icon: <Users size={18} /> },
+      { name: 'Finance', path: 'finance', icon: <Banknote size={18} /> },
+      { name: 'Reports', path: 'reports', icon: <FileChartColumn size={18} /> },
+      { name: 'Audit log', path: 'audit', icon: <History size={18} /> },
+      { name: 'System settings', path: 'settings', icon: <Settings size={18} /> },
+    ],
+  },
+];
+
+export const getEstateAnalyticsModuleSections = (): ModuleSection[] => [
+  {
+    label: 'Estate intelligence',
+    modules: [
+      { name: 'Analytics dashboard', path: '', icon: <LayoutDashboard size={18} /> },
+      { name: 'Supply & listings', path: 'supply', icon: <HomeIcon size={18} /> },
+      { name: 'Rentals & occupancy', path: 'rentals', icon: <FileClock size={18} /> },
+      { name: 'Land intelligence', path: 'land', icon: <MapPin size={18} /> },
+      { name: 'Title & verification', path: 'title', icon: <ShieldCheck size={18} /> },
+      { name: 'Demand intelligence', path: 'demand', icon: <Users size={18} /> },
+      { name: 'Viewing conversion', path: 'viewings', icon: <CalendarClock size={18} /> },
+      { name: 'Deal conversion', path: 'deals', icon: <BadgeDollarSign size={18} /> },
+    ],
+  },
+  {
+    label: 'Business intelligence',
+    modules: [
+      { name: 'Maintenance performance', path: 'maintenance', icon: <Wrench size={18} /> },
+      { name: 'Agent performance', path: 'workforce', icon: <UserRound size={18} /> },
+      { name: 'Finance analytics', path: 'finance', icon: <Banknote size={18} /> },
+      { name: 'Marketing attribution', path: 'marketing', icon: <Megaphone size={18} /> },
+      { name: 'Reports & evidence', path: 'reports', icon: <FileText size={18} /> },
+    ],
+  },
+];
 
 /**
  * AGL is the reference operational tenant. These routes deliberately exclude a

@@ -8,6 +8,12 @@ import { getModuleForWorkspace, getWorkspaceForPath } from '../config/erpWorkspa
 import { useTenant } from '../context/TenantContext';
 import { getERPInsightDefinition, getTenantRegistryInsight } from '../data/erpInsightCatalog';
 import { getTenantsByVertical } from '../data/mockAnalyticsData';
+import { isDomainVertical } from '../data/verticalDomainContracts';
+import { AutoHubCommandWorkspace } from './autos/AutoHubCommandWorkspace';
+import { EstateCommandWorkspace } from './estate/EstateCommandWorkspace';
+import { EstateCentralModuleWorkspace } from './estate/EstateCentralModuleWorkspace';
+import { VerticalModuleWorkspace, VerticalTenantControl } from './vertical/VerticalDomainWorkspace';
+import { EcosystemWorkspace } from './global/EcosystemWorkspace';
 
 export const ERPModulePage: React.FC = () => {
   const location = useLocation();
@@ -24,6 +30,22 @@ export const ERPModulePage: React.FC = () => {
   }, [setCurrentVertical, workspace.verticalId]);
 
   if (!moduleDefinition) return null;
+  if (workspace.verticalId === 'global') {
+    return <EcosystemWorkspace moduleId={moduleId} />;
+  }
+  if (workspace.verticalId === 'autos' && moduleId === 'tenants') {
+    return <AutoHubCommandWorkspace view="tenants" />;
+  }
+  if (workspace.verticalId === 'estate' && moduleId === 'tenants') {
+    return <EstateCommandWorkspace view="tenants" />;
+  }
+  if (workspace.verticalId === 'estate') {
+    return <EstateCentralModuleWorkspace moduleId={moduleId} />;
+  }
+  if (isDomainVertical(workspace.verticalId)) {
+    if (moduleId === 'tenants') return <VerticalTenantControl workspace={workspace} />;
+    return <VerticalModuleWorkspace workspace={workspace} module={moduleDefinition} />;
+  }
 
   const selected = searchParams.get('drill') || '';
   const tenants = moduleId === 'tenants' ? getTenantsByVertical(workspace.verticalId) : [];

@@ -397,11 +397,11 @@ const AttendanceEditor = ({
   const set = <K extends keyof AttendanceEntryInput>(key: K, value: AttendanceEntryInput[K]) => setValues((current) => ({ ...current, [key]: value }));
   const excused = values.absenceType !== 'None';
   return (
-    <div className="custom-scrollbar fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-black/75 p-3 backdrop-blur-sm sm:p-6">
+    <div className="custom-scrollbar fixed inset-0 z-[120] overflow-y-auto overscroll-contain bg-black/75 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-label={record?.id ? `Edit attendance ${record.id}` : 'Manual attendance entry'}>
       <form onSubmit={(event) => { event.preventDefault(); onSave(values); }} className="mx-auto my-auto w-full max-w-xl rounded-xl border border-white/[0.1] bg-[#090909] shadow-2xl">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-white/[0.08] bg-[#090909]/95 p-5 backdrop-blur sm:p-6">
           <div><div className="font-mono text-[8px] uppercase text-cyan-300">{record?.id ? 'Controlled correction' : 'Backdated / manual capture'}</div><h2 className="mt-2 text-xl text-white">{record?.id ? `Edit ${record.id}` : 'Manual attendance entry'}</h2><p className="mt-1 text-[10px] text-gray-600">Use legal absence for Holiday, PTO, or Sickday; times are cleared automatically.</p></div>
-          <button type="button" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] text-gray-500"><X size={14} /></button>
+          <button type="button" aria-label="Close attendance editor" onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] text-gray-500"><X size={14} /></button>
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
           <div className="sm:col-span-2"><Field label="Employee" value={values.employeeId} onChange={(value) => set('employeeId', value)} options={employees.map((employee) => ({ value: employee.id, label: `${String(employee.name)} · ${String(employee.role)}` }))} /></div>

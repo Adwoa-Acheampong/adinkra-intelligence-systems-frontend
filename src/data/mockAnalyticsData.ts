@@ -1,13 +1,16 @@
-import { Tenant, VerticalId } from '../types';
+import type { Tenant, VerticalId } from '../types';
 
 export const MOCK_TENANTS: Tenant[] = [
   { id: 'agl', name: 'Automobiles Ghana Limited (AGL)', verticalId: 'autos', type: 'dealer' },
   { id: 'kumasi_motors', name: 'Kumasi Motors', verticalId: 'autos', type: 'dealer' },
   { id: 'adinkra_motors', name: 'Adinkra Motors Workshop', verticalId: 'autos', type: 'workshop' },
+  { id: 'lagos_autocare', name: 'Lagos Autocare & Fleet', verticalId: 'autos', type: 'dealer' },
   { id: 'techiman_grain', name: 'Techiman Grain Co-op', verticalId: 'farmers', type: 'coop' },
   { id: 'akumadan_farms', name: 'Akumadan Farms', verticalId: 'farmers', type: 'coop' },
+  { id: 'tamale_produce', name: 'Tamale Produce Union', verticalId: 'farmers', type: 'aggregator' },
   { id: 'prime_accra', name: 'Prime Accra Realty', verticalId: 'estate', type: 'agency' },
   { id: 'heritage', name: 'Heritage Estates', verticalId: 'estate', type: 'agency' },
+  { id: 'lagos_habitat', name: 'Lagos Habitat Partners', verticalId: 'estate', type: 'agency' },
   { id: 'techvalley', name: 'TechValley GH', verticalId: 'merchant', type: 'merchant' },
   { id: 'osu_bespoke', name: 'Osu Bespoke', verticalId: 'merchant', type: 'merchant' },
   { id: 'abossey_parts', name: 'Abossey Okai Parts Network', verticalId: 'merchant', type: 'parts_seller' },
@@ -16,7 +19,13 @@ export const MOCK_TENANTS: Tenant[] = [
   { id: 'kumasi_trade_depot', name: 'Kumasi Trade Depot', verticalId: 'merchant', type: 'merchant' },
   { id: 'crushed_diamonds', name: 'Crushed Diamonds', verticalId: 'label', type: 'house' },
   { id: 'havilah', name: 'Havilah', verticalId: 'label', type: 'house' },
+  { id: 'kente_collective', name: 'Koforidua Kente Collective', verticalId: 'label', type: 'house' },
+  { id: 'accra_susu_union', name: 'Accra Susu Union', verticalId: 'susu', type: 'financial_coop' },
+  { id: 'kumasi_market_susu', name: 'Kumasi Market Susu Network', verticalId: 'susu', type: 'financial_coop' },
+  { id: 'lagos_trader_circle', name: 'Lagos Trader Savings Circle', verticalId: 'susu', type: 'financial_coop' },
   { id: 'mining_gh', name: 'Ghana Mining Corp', verticalId: 'gold', type: 'miner' },
+  { id: 'ashanti_bullion', name: 'Ashanti Bullion Cooperative', verticalId: 'gold', type: 'dealer' },
+  { id: 'tarkwa_artisanal', name: 'Tarkwa Artisanal Mining Union', verticalId: 'gold', type: 'miner' },
   { id: 'accra_field_network', name: 'Greater Accra Field Network', verticalId: 'agents', type: 'agent' },
   { id: 'ashanti_trade_desk', name: 'Ashanti Trade Agent Desk', verticalId: 'agents', type: 'agent' },
   { id: 'techiman_market_unit', name: 'Techiman Market Verification Unit', verticalId: 'agents', type: 'agent' },

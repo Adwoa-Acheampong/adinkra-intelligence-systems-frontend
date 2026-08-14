@@ -315,6 +315,7 @@ export const VERTICAL_ERPS: Partial<Record<VerticalId, ERPWorkspaceDefinition>> 
       label: 'Financial operations',
       modules: [
         overview(),
+        module('tenants', 'Susu Tenants', 'Co-operatives, market networks and governed savings circles.', Building2),
         module('wallets', 'Wallets & Accounts', 'Balances, holds, limits and account state.', WalletCards),
         module('payments', 'Payment Orchestration', 'MoMo, cards, bank, cash and callback control.', CreditCard),
         module('escrow', 'Escrow Control', 'Holds, conditions, releases, refunds and disputes.', ShieldCheck),
@@ -340,6 +341,8 @@ export const VERTICAL_ERPS: Partial<Record<VerticalId, ERPWorkspaceDefinition>> 
         module('payments', 'Escrow & Settlement', 'Holds, settlement, fees and reconciliation.', HandCoins),
         module('compliance', 'Compliance', 'Licensing, AML, provenance and regulator reporting.', FileCheck2),
         module('finance', 'Finance', 'Valuation, exposure, margin, taxes and cash.', Landmark),
+        module('workforce', 'Workforce', 'Licensed buyers, assayers, vault officers, couriers and qualified capacity.', Users),
+        module('audit', 'Reports & Audit', 'Lot provenance, assay, custody, settlement and actor evidence packs.', ShieldCheck),
       ],
     },
   ]),

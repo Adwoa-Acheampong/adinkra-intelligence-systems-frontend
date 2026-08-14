@@ -44,8 +44,12 @@ import { AglSupplierWorkspace } from '../../pages/tenant/AglSupplierWorkspace';
 import { AglDailyOperationsWorkspace } from '../../pages/tenant/AglDailyOperationsWorkspace';
 import { AglAuditLogWorkspace } from '../../pages/tenant/AglAuditLogWorkspace';
 import { AglAnalyticsWorkspace } from '../../pages/tenant/AglAnalyticsWorkspace';
+import { EstateTenantWorkspace } from '../../pages/estate/EstateTenantWorkspace';
 import { TenantSystemChooser } from '../../pages/tenant/TenantSystemChooser';
+import { DomainTenantWorkspace } from '../../pages/tenant/DomainTenantWorkspace';
 import { getTenantById } from '../../data/mockAnalyticsData';
+import { isDomainVertical } from '../../data/verticalDomainContracts';
+import { getDomainTenantErpStart } from '../../config/routes';
 import { GenericEntityTable } from './GenericEntityTable';
 import { Sidebar } from '../layout/Sidebar';
 import { AglOperatingScopeProvider } from '../../context/AglOperatingScopeContext';
@@ -77,8 +81,17 @@ export const TenantERPShell = () => {
   const basePath = `/${currentTenant.verticalId}/tenant/${currentTenant.id}`;
   const relativePath = location.pathname.slice(basePath.length).replace(/^\/+/, '');
   const segments = relativePath.split('/').filter(Boolean);
-  const dualSystemTenant = currentTenant.verticalId === 'autos' && currentTenant.id === 'agl';
+  const aglDualSystemTenant = currentTenant.verticalId === 'autos' && currentTenant.id === 'agl';
+  const estateDualSystemTenant = currentTenant.verticalId === 'estate';
+  const domainDualSystemTenant = isDomainVertical(currentTenant.verticalId);
+  const genericDomainTenant = domainDualSystemTenant && !aglDualSystemTenant;
+  const dualSystemTenant = domainDualSystemTenant || estateDualSystemTenant;
   const tenantMode = segments[0] === 'erp' ? 'erp' : 'analytics';
+  const erpStart = estateDualSystemTenant
+    ? 'property-register'
+    : aglDualSystemTenant
+      ? 'work-orders'
+      : getDomainTenantErpStart(currentTenant.verticalId);
 
   if (dualSystemTenant && segments.length === 0) {
     return <TenantSystemChooser tenant={currentTenant} />;
@@ -101,7 +114,7 @@ export const TenantERPShell = () => {
               {tenantMode === 'erp' ? 'Operational ERP · PROD' : 'Analytics · PROD'}
             </span>
           </div>
-          {dualSystemTenant && (
+          {aglDualSystemTenant && (
             <button type="button" aria-label="Search AGL pages and actions" onClick={() => window.dispatchEvent(new CustomEvent('agl-command-palette:open'))} className="mx-5 hidden h-9 min-w-0 max-w-md flex-1 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 text-left text-[10px] text-gray-600 transition hover:border-cyan-300/20 hover:text-gray-400 lg:flex">
               <Search size={13} className="text-cyan-300/70" />
               <span className="min-w-0 flex-1 truncate">Search pages, actions, or settings…</span>
@@ -109,7 +122,7 @@ export const TenantERPShell = () => {
             </button>
           )}
           <div className="flex items-center gap-3">
-            {dualSystemTenant && <button type="button" aria-label="Search AGL pages and actions" onClick={() => window.dispatchEvent(new CustomEvent('agl-command-palette:open'))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] text-cyan-300/70 lg:hidden"><Search size={14} /></button>}
+            {aglDualSystemTenant && <button type="button" aria-label="Search AGL pages and actions" onClick={() => window.dispatchEvent(new CustomEvent('agl-command-palette:open'))} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] text-cyan-300/70 lg:hidden"><Search size={14} /></button>}
             {dualSystemTenant && (
               <div className="hidden items-center rounded-lg border border-white/[0.08] bg-black/30 p-1 sm:flex">
                 <button
@@ -119,30 +132,46 @@ export const TenantERPShell = () => {
                   Analytics
                 </button>
                 <button
-                  onClick={() => navigate(`${basePath}/erp/work-orders`)}
+                  onClick={() => navigate(`${basePath}/erp/${erpStart}`)}
                   className={`min-h-8 rounded-md px-3 text-[10px] transition ${tenantMode === 'erp' ? 'bg-vertical-accent text-black' : 'text-gray-600 hover:text-gray-300'}`}
                 >
                   ERP
                 </button>
               </div>
             )}
-            {dualSystemTenant && <AglNotificationBell basePath={basePath} />}
+            {aglDualSystemTenant && <AglNotificationBell basePath={basePath} />}
             <div className="flex h-8 w-8 items-center justify-center rounded-full border border-surface-border bg-surface-glass text-xs font-medium text-gray-300">AD</div>
           </div>
         </header>
 
-        {dualSystemTenant && <AglCommandPalette basePath={basePath} />}
+        {aglDualSystemTenant && <AglCommandPalette basePath={basePath} />}
 
-        {dualSystemTenant && <AglOperatingScopeBar />}
+        {aglDualSystemTenant && <AglOperatingScopeBar />}
 
         <main id="main-content" className="custom-scrollbar relative flex-1 overflow-auto p-4 sm:p-6 md:p-8">
-          {dualSystemTenant ? (
+          {estateDualSystemTenant ? (
+            <Routes>
+              <Route path="analytics" element={<EstateTenantWorkspace tenant={currentTenant} mode="analytics" moduleId="dashboard" />} />
+              <Route path="analytics/*" element={<EstateTenantModuleRoute tenant={currentTenant} mode="analytics" />} />
+              <Route path="erp" element={<Navigate to={`${basePath}/erp/property-register`} replace />} />
+              <Route path="erp/*" element={<EstateTenantModuleRoute tenant={currentTenant} mode="erp" />} />
+              <Route path="*" element={<Navigate to={`${basePath}/analytics`} replace />} />
+            </Routes>
+          ) : aglDualSystemTenant ? (
             <Routes>
               <Route path="analytics" element={<AglAnalyticsWorkspace tenant={currentTenant} moduleId="overview" />} />
               <Route path="analytics/*" element={<AutoModuleRoute tenant={currentTenant} />} />
               <Route path="erp" element={<Navigate to={`${basePath}/erp/work-orders`} replace />} />
               <Route path="erp/*" element={<AglOperationalRoute tenant={currentTenant} />} />
               <Route path="*" element={<LegacyAnalyticsRedirect basePath={basePath} />} />
+            </Routes>
+          ) : genericDomainTenant ? (
+            <Routes>
+              <Route path="analytics" element={<DomainTenantWorkspace tenant={currentTenant} mode="analytics" moduleId="overview" />} />
+              <Route path="analytics/*" element={<DomainTenantModuleRoute tenant={currentTenant} mode="analytics" />} />
+              <Route path="erp" element={<Navigate to={`${basePath}/erp/${erpStart}`} replace />} />
+              <Route path="erp/*" element={<DomainTenantModuleRoute tenant={currentTenant} mode="erp" />} />
+              <Route path="*" element={<Navigate to={`${basePath}/analytics`} replace />} />
             </Routes>
           ) : (
             <Routes>
@@ -163,9 +192,23 @@ export const TenantERPShell = () => {
       </div>
     </div>
   );
-  return dualSystemTenant
+  return aglDualSystemTenant
     ? <AglOperatingScopeProvider>{shell}</AglOperatingScopeProvider>
     : shell;
+};
+
+const DomainTenantModuleRoute = ({ tenant, mode }: { tenant: NonNullable<ReturnType<typeof getTenantById>>; mode: 'erp' | 'analytics' }) => {
+  const location = useLocation();
+  const segments = location.pathname.split('/').filter(Boolean);
+  const moduleId = segments[segments.length - 1] || (mode === 'analytics' ? 'overview' : getDomainTenantErpStart(tenant.verticalId));
+  return <DomainTenantWorkspace tenant={tenant} mode={mode} moduleId={moduleId} />;
+};
+
+const EstateTenantModuleRoute = ({ tenant, mode }: { tenant: NonNullable<ReturnType<typeof getTenantById>>; mode: 'erp' | 'analytics' }) => {
+  const location = useLocation();
+  const segments = location.pathname.split('/').filter(Boolean);
+  const moduleId = segments[segments.length - 1] || (mode === 'erp' ? 'property-register' : 'dashboard');
+  return <EstateTenantWorkspace tenant={tenant} mode={mode} moduleId={moduleId} />;
 };
 
 const AgentModuleRoute = () => {

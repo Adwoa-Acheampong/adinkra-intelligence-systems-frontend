@@ -20,7 +20,7 @@ export interface Tenant {
   id: string;
   name: string;
   verticalId: VerticalId;
-  type: 'hub' | 'dealer' | 'coop' | 'merchant' | 'agent' | 'house' | 'miner' | 'workshop' | 'parts_seller' | 'agency' | 'landlord';
+  type: 'hub' | 'dealer' | 'coop' | 'aggregator' | 'financial_coop' | 'merchant' | 'agent' | 'house' | 'miner' | 'workshop' | 'parts_seller' | 'agency' | 'landlord';
 }
 
 export interface TenantContextType {

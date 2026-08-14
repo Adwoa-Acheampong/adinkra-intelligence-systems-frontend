@@ -8,6 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "verify:domains": "node --experimental-strip-types scripts/verify-domain-routes.mjs",
+    "gate:frontend": "npm run typecheck && npm run verify:domains && npm run build",
     "build": "vite build",
     "preview": "vite preview"
   },
