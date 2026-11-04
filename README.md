@@ -25,10 +25,7 @@ Adinkra is the computational spine that turns informal African market activity i
 
 Ready-to-import starter workflows are in the `/n8n_workflows` folder.
 
-## Ellison Scholars Materials
-
-Portfolio entries and guides prepared for the Undergraduate Ellison Scholars Programme are in `/ellison-scholars`.
-
+ 
 ## Vision
 
 Blkk Star Hub constructs a three-sided bridge:
